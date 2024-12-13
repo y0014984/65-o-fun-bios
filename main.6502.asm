@@ -13,20 +13,35 @@ IRQB                = $FFFE
 
 SOFTWARE_VECTORS    = $FFF6
 
-PROGRAM_START       = $8000
+PROGRAM_START       = $9000
 
-CUR_POS_X           = $9000
-CUR_POS_Y           = $9001
+// Constants
+SCREEN_WIDTH        = 40            // 40 chars width * 8 = 320px
+SCREEN_HEIGHT       = 30            // 30 chars height * 8 = 240px
+
+// Zero Page variables
+TMP_CURSOR          = $FE           // WORD $FE + $FF
+
+// Screen related variables
+CUR_POS_X           = $8000
+CUR_POS_Y           = $8001
+
+// Keyboard related variables
+LAST_KEYPRESS       = $8002
+CURRENT_KEYPRESS    = $8003
 
 // ========================================
 
     *=PROGRAM_START
 
-PROGRAM_LOOP
-    INC $0300
+    //JSR TEST_SCREEN
+
+PROGRAM_LOOP                        // main Bios loop
     JMP PROGRAM_LOOP
 
-IRQ_START
+// ========================================
+
+IRQ_START                           // triggered by hardware or software (BRK) interrupt
     PHA                             // store A
     TXA
     PHA                             // store X
@@ -39,15 +54,14 @@ IRQ_START
                                     // +4 to get the status register
                                     // before that A,X and Y are stored
     AND #%0001_0000                 // test break flag
-    BEQ NOT_BRK
+    BEQ @notBrk
     JMP (BRK_ROUTINE_VECTOR)
-
-NOT_BRK
+@notBrk
     JMP (IRQ_ROUTINE_VECTOR)
 
+// ========================================
+
 IRQ_ROUTINE
-    // do stuff
-    INC $0301
     JSR READ_KEYBOARD
 
     PLA
@@ -56,6 +70,8 @@ IRQ_ROUTINE
     TAX                             // restore X
     PLA                             // restore A
     RTI                             // return to main program
+
+// ========================================
 
 BRK_ROUTINE
     // do stuff
@@ -66,8 +82,22 @@ BRK_ROUTINE
     PLA                             // restore A
     RTI                             // return to main program
 
-READ_KEYBOARD
-    LDA $0200
+// ========================================
+
+shiftPressed .byte $00
+
+READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware keyboard registers)
+    LDA $0205                       // check if shift is pressed
+    AND #%00000001
+    BNE @shiftPressed
+    LDA #0
+    STA shiftPressed
+    JMP @testKeys
+@shiftPressed
+    LDA #1
+    STA shiftPressed
+@testKeys
+    LDA $0200                       // test all other keys
     AND #%00000001
     BNE @KeyA
     LDA $0200
@@ -163,7 +193,6 @@ READ_KEYBOARD
     LDA $0203
     AND #%10000000
     BNE @Digit6
-
     LDA $0204
     AND #%00000001
     BNE @Digit7
@@ -188,10 +217,9 @@ READ_KEYBOARD
     LDA $0204
     AND #%10000000
     BNE @Period
-
-    LDA $0205
+/*     LDA $0205
     AND #%00000001
-    BNE @Shift
+    BNE @Shift */
     LDA $0205
     AND #%00000010
     BNE @Control
@@ -213,7 +241,6 @@ READ_KEYBOARD
     LDA $0205
     AND #%10000000
     BNE @Slash
-
     LDA $0206
     AND #%00000001
     BNE @ArrowLeft
@@ -238,7 +265,6 @@ READ_KEYBOARD
     LDA $0206
     AND #%10000000
     BNE @Backslash
-
     LDA $0207
     AND #%00000001
     BNE @F1
@@ -263,7 +289,6 @@ READ_KEYBOARD
     LDA $0207
     AND #%10000000
     BNE @F8
-
     LDA $0208
     AND #%00000001
     BNE @F9
@@ -288,7 +313,6 @@ READ_KEYBOARD
     LDA $0208
     AND #%10000000
     BNE @IntlBackslash
-
     LDA $0209
     AND #%00000001
     BNE @PageUp
@@ -313,8 +337,7 @@ READ_KEYBOARD
     LDA $0209
     AND #%10000000
     BNE @XXX
-
-    JMP @return
+    JMP @NoKeypress
 @KeyA
     LDA #$41
     JMP @continue
@@ -411,7 +434,6 @@ READ_KEYBOARD
 @Digit6
     LDA #$36
     JMP @continue
-
 @Digit7
     LDA #$37
     JMP @continue
@@ -436,10 +458,9 @@ READ_KEYBOARD
 @Period
     LDA #$2E
     JMP @continue
-
-@Shift
-    LDA #$00
-    JMP @continue
+/* @Shift
+    LDA #$20
+    JMP @continue */
 @Control
     LDA #$00
     JMP @continue
@@ -461,7 +482,6 @@ READ_KEYBOARD
 @Slash
     LDA #$2F
     JMP @continue
-
 @ArrowLeft
     LDA #$00
     JMP @continue
@@ -478,15 +498,14 @@ READ_KEYBOARD
     LDA #$00
     JMP @continue
 @Backspace
-    LDA #$00
-    JMP @continue
+    LDA #$20
+    JMP @continueBackspace
 @Escape
     LDA #$00
     JMP @continue
 @Backslash
     LDA #$5C
     JMP @continue
-
 @F1
     LDA #$00
     JMP @continue
@@ -511,7 +530,6 @@ READ_KEYBOARD
 @F8
     LDA #$00
     JMP @continue
-
 @F9
     LDA #$00
     JMP @continue
@@ -536,7 +554,6 @@ READ_KEYBOARD
 @IntlBackslash
     LDA #$00
     JMP @continue
-
 @PageUp
     LDA #$00
     JMP @continue
@@ -562,12 +579,149 @@ READ_KEYBOARD
     LDA #$00
     JMP @continue
 
-@continue
-    LDX CUR_POS_X
-    STA $0400,X
-    INC CUR_POS_X
-    INC $0302
+@NoKeypress
+    LDA $00
+    STA CURRENT_KEYPRESS
+    STA LAST_KEYPRESS
+    JMP @return
 
+@continueBackspace
+    STA CURRENT_KEYPRESS                        // a contains keypress
+    CMP LAST_KEYPRESS                           // if previous key is still pressed do nothing
+    BEQ @return
+    //DEC CUR_POS_X
+    JSR DECREMENT_POINTER
+    JSR PRINT_CHAR                              // print keypress to screen
+    //DEC CUR_POS_X
+    JSR DECREMENT_POINTER
+    LDA CURRENT_KEYPRESS
+    STA LAST_KEYPRESS                           // store current keypress in last keypress
+    JMP @return
+
+@continue
+    CMP #$41                                    // check if key is a shiftable character 
+    BCC @upperCase                              // if >=$41 and <=$5A
+    CMP #$5A                                    // not if <$41 or >$5A
+    BEQ @lowerCase
+    BCS @upperCase
+@lowerCase
+    LDX shiftPressed                            // if shift is pressed add $20 to key which
+    CPX #0                                      // effectively turns uppercase into lowercase
+    BNE @upperCase
+    CLC
+    ADC #$20
+@upperCase
+    STA CURRENT_KEYPRESS                        // a contains keypress
+    CMP LAST_KEYPRESS                           // if previous key is still pressed do nothing
+    BEQ @return
+    JSR PRINT_CHAR                              // print keypress to screen
+    LDA CURRENT_KEYPRESS
+    STA LAST_KEYPRESS                           // store current keypress in last keypress
+
+@return
+    RTS
+
+// ========================================
+
+testScreenTmp .byte $00
+testScreenMin .byte $20
+testScreenMax .byte $7E
+
+TEST_SCREEN                                     // fill screen with all printable chars
+    LDA testScreenMin
+    STA testScreenTmp
+@loop                               
+    JSR PRINT_CHAR
+    INC testScreenTmp
+    LDA testScreenTmp
+    CMP testScreenMax
+    BEQ @loop
+    BCS TEST_SCREEN
+    JMP @loop
+@return
+    RTS
+
+// ========================================
+
+PRINT_CHAR                                      // print char stored in A to screen and increment cursor
+    PHA                                         // store A to stack
+    LDA #<$0400                                 // calculate current cur pos
+    STA TMP_CURSOR
+    LDA #>$0400
+    STA TMP_CURSOR + 1
+
+    LDY CUR_POS_Y
+@addY                                           // loop through all rows and
+    CPY #0                                      // at the end add current x
+    BEQ @addX                                   // to get current cursor
+    LDA TMP_CURSOR
+    CLC
+    ADC #SCREEN_WIDTH                           // add screen width to cursor
+    STA TMP_CURSOR
+    LDA TMP_CURSOR + 1
+    ADC #0
+    STA TMP_CURSOR + 1
+    DEY 
+    JMP @addY
+@addX
+    LDA TMP_CURSOR
+    CLC
+    ADC CUR_POS_X                               // add x to cursor
+    STA TMP_CURSOR
+    LDA TMP_CURSOR + 1
+    ADC #0
+    STA TMP_CURSOR + 1
+@printChar
+    PLA                                         // get current char stored in A
+    LDX #0
+    STA (TMP_CURSOR,X)                          // print char to screen
+    JSR INCREMENT_POINTER
+@return
+    RTS
+
+// ========================================
+
+INCREMENT_POINTER
+@incX
+    INC CUR_POS_X                               // set cur pos to next pos
+    LDX CUR_POS_X
+    CPX #SCREEN_WIDTH                           // screen width reached?
+    BEQ @incY
+    JMP @return
+@incY
+    LDX #0
+    STX CUR_POS_X                               // set pos x to 0
+    INC CUR_POS_Y                               // increment pos y
+    LDY CUR_POS_Y
+    CPY #SCREEN_HEIGHT                          // screen height reached?
+    BEQ @reset
+    JMP @return
+@reset
+    LDY #0
+    STY CUR_POS_Y                               // set pos y to 0
+@return
+    RTS
+
+// ========================================
+
+DECREMENT_POINTER
+@decX
+    DEC CUR_POS_X                               // set cur pos to previous pos
+    LDX CUR_POS_X
+    CPX #255                                    // left screen border reached?
+    BEQ @decY
+    JMP @return
+@decY
+    LDX #SCREEN_WIDTH - 1
+    STX CUR_POS_X                               // set pos x to screen width
+    DEC CUR_POS_Y                               // decrement pos y
+    LDY CUR_POS_Y
+    CPY #255                                    // upper screen border reached?
+    BEQ @reset
+    JMP @return
+@reset
+    LDY #SCREEN_HEIGHT - 1
+    STY CUR_POS_Y                               // set pos y to screen height
 @return
     RTS
 
