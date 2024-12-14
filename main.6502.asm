@@ -2,6 +2,7 @@
 .format "prg"
 .setting "Debug", true
 .setting "HandleLongBranch", true
+.encoding "ascii", "mixed"
 
 // ========================================
 
@@ -20,6 +21,7 @@ SCREEN_WIDTH        = 40            // 40 chars width * 8 = 320px
 SCREEN_HEIGHT       = 30            // 30 chars height * 8 = 240px
 
 // Zero Page variables
+TMP_POINTER         = $FC           // WORD $FC + $FD
 TMP_CURSOR          = $FE           // WORD $FE + $FF
 
 // Screen related variables
@@ -40,7 +42,34 @@ CURRENT_KEYPRESS    = $8003
 
 // ========================================
 
+welcomeMessageLine1 .textz "*** 65-o-fun v0.1 BIOS ***"
+welcomeMessageLine2 .textz "created by y0014984 (c) 2024"
+
+
+// ========================================
+
 BIOS_START
+    LDA #7                         // print welcome screen and prompt
+    STA CUR_POS_X
+    LDA #1
+    STA CUR_POS_Y
+    LDX #<welcomeMessageLine1
+    LDY #>welcomeMessageLine1
+    JSR PRINT_STRING
+    LDA #6
+    STA CUR_POS_X
+    LDA #3
+    STA CUR_POS_Y
+    LDX #<welcomeMessageLine2
+    LDY #>welcomeMessageLine2
+    JSR PRINT_STRING
+    LDA #0
+    STA CUR_POS_X
+    LDA #5
+    STA CUR_POS_Y
+    LDA #$3E                        // GREATER THAN SIGN == prompt
+    JSR PRINT_CHAR
+    JSR INCREMENT_CURSOR
     LDA #$81                        // unused ASCII code is now Cursor
     JSR PRINT_CHAR
 @loop
@@ -51,6 +80,9 @@ BIOS_START
     BEQ @backspace
     CMP #$0A                        // LINE FEED
     BEQ @enter
+    LDX CUR_POS_X                   // don't leave current input line
+    CPX #SCREEN_WIDTH - 1
+    BEQ @loop
     JSR PRINT_CHAR
     JSR INCREMENT_CURSOR
 @printCursor
@@ -58,6 +90,9 @@ BIOS_START
     JSR PRINT_CHAR
     JMP @loop
 @backspace
+    LDX CUR_POS_X                   // don't go beyond prompt
+    CPX #1
+    BEQ @loop
     LDA #$20                        // SPACE
     JSR PRINT_CHAR                  // override current pos with blank to clear cursor
     JSR DECREMENT_CURSOR
@@ -719,8 +754,7 @@ TEST_SCREEN                                     // fill screen with all printabl
 
 // ========================================
 
-PRINT_CHAR                                      // print char stored in A to screen and increment cursor
-    PHA                                         // store A to stack
+CALCULATE_CUR_POS
     LDA #<$0400                                 // calculate current cur pos
     STA TMP_CURSOR
     LDA #>$0400
@@ -747,10 +781,39 @@ PRINT_CHAR                                      // print char stored in A to scr
     LDA TMP_CURSOR + 1
     ADC #0
     STA TMP_CURSOR + 1
+@return
+    RTS
+
+// ========================================
+
+PRINT_CHAR                                      // print char stored in A to screen and increment cursor
+    PHA                                         // store A to stack
+    JSR CALCULATE_CUR_POS
 @printChar
     PLA                                         // get current char stored in A
     LDX #0
     STA (TMP_CURSOR,X)                          // print char to screen
+@return
+    RTS
+
+// ========================================
+
+PRINT_STRING                                    // prints the string with address $yyxx == $$hhll
+    TYA
+    PHA
+    JSR CALCULATE_CUR_POS
+    PLA
+    TAY
+    STX TMP_POINTER
+    STY TMP_POINTER + 1
+    LDY #0
+@loop
+    LDA (TMP_POINTER),Y
+    CMP #$00
+    BEQ @return
+    STA (TMP_CURSOR),Y                          // print char to screen
+    INY
+    JMP @loop
 @return
     RTS
 
