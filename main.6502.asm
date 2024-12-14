@@ -36,6 +36,9 @@ CURRENT_KEYPRESS    = $8003
 
     //JSR TEST_SCREEN
 
+    LDA #$81                        // unused ASCII code is now Cursor
+    JSR PRINT_CHAR
+
 PROGRAM_LOOP                        // main Bios loop
     JMP PROGRAM_LOOP
 
@@ -495,8 +498,8 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA #$00
     JMP @continue
 @Enter
-    LDA #$00
-    JMP @continue
+    LDA #$0A                            // line feed
+    JMP @continueEnter
 @Backspace
     LDA #$20
     JMP @continueBackspace
@@ -585,18 +588,33 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     STA LAST_KEYPRESS
     JMP @return
 
+@continueEnter
+    STA CURRENT_KEYPRESS                        // a contains keypress
+    CMP LAST_KEYPRESS                           // if previous key is still pressed do nothing
+    BEQ @return
+    STA LAST_KEYPRESS                           // store current keypress in last keypress
+    LDA #$20                                    // ASCII blank space
+    JSR PRINT_CHAR                              // override current pos with blank to clear cursor
+    LDA #0                                      // set cursor to next line
+    STA CUR_POS_X                               // by setting x to 0
+    INC CUR_POS_Y                               // and increasing y until
+    LDA CUR_POS_Y                               // height reached
+    CMP #SCREEN_HEIGHT                          // then return to first line
+    BNE @printCursor
+    LDA #0
+    STA CUR_POS_Y
+    JMP @printCursor
+
 @continueBackspace
     STA CURRENT_KEYPRESS                        // a contains keypress
     CMP LAST_KEYPRESS                           // if previous key is still pressed do nothing
     BEQ @return
-    //DEC CUR_POS_X
+    STA LAST_KEYPRESS                           // store current keypress in last keypress
+    JSR PRINT_CHAR                              // override current pos with blank to clear cursor
     JSR DECREMENT_POINTER
     JSR PRINT_CHAR                              // print keypress to screen
-    //DEC CUR_POS_X
-    JSR DECREMENT_POINTER
     LDA CURRENT_KEYPRESS
-    STA LAST_KEYPRESS                           // store current keypress in last keypress
-    JMP @return
+    JMP @printCursor
 
 @continue
     CMP #$41                                    // check if key is a shiftable character 
@@ -614,9 +632,13 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     STA CURRENT_KEYPRESS                        // a contains keypress
     CMP LAST_KEYPRESS                           // if previous key is still pressed do nothing
     BEQ @return
-    JSR PRINT_CHAR                              // print keypress to screen
-    LDA CURRENT_KEYPRESS
     STA LAST_KEYPRESS                           // store current keypress in last keypress
+    JSR PRINT_CHAR                              // print keypress to screen
+    JSR INCREMENT_POINTER
+
+@printCursor
+    LDA #$81                                    // unused ASCII code is now Cursor
+    JSR PRINT_CHAR
 
 @return
     RTS
@@ -675,7 +697,6 @@ PRINT_CHAR                                      // print char stored in A to scr
     PLA                                         // get current char stored in A
     LDX #0
     STA (TMP_CURSOR,X)                          // print char to screen
-    JSR INCREMENT_POINTER
 @return
     RTS
 
