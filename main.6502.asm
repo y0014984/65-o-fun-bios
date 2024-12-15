@@ -27,10 +27,15 @@ TMP_CURSOR          = $FE           // WORD $FE + $FF
 // Screen related variables
 CUR_POS_X           = $8000
 CUR_POS_Y           = $8001
+CURSOR_CHAR         = $8002
 
 // Keyboard related variables
-LAST_KEYPRESS       = $8002
-CURRENT_KEYPRESS    = $8003
+LAST_KEYPRESS       = $8003
+CURRENT_KEYPRESS    = $8004
+
+// BIOS related variables
+INP_BUF_LEN     	= $8005
+INP_BUF_CUR         = $8006
 
 // ========================================
 
@@ -72,19 +77,58 @@ BIOS_START
     JSR INCREMENT_CURSOR
     LDA #$81                        // unused ASCII code is now Cursor
     JSR PRINT_CHAR
+    LDA #$20                        // ASCII SPACE as the not set string under the cursor
+    STA CURSOR_CHAR
 @loop
+    // DEBUG START
+    LDA INP_BUF_CUR
+    CLC
+    ADC #$30                        // convert binary number to printable ASCII
+    STA $0400
+    LDA INP_BUF_LEN
+    CLC
+    ADC #$30                        // convert binary number to printable ASCII
+    STA $0401
+    // DEBUG END
     JSR GET_CHAR_FROM_BUFFER
     CMP #$00
     BEQ @loop
-    CMP #$08                        // BACKSPACE
-    BEQ @backspace
-    CMP #$0A                        // LINE FEED
-    BEQ @enter
+    CMP #$08                        // ASCII BACKSPACE
+    BEQ @backspaceJump
+    CMP #$0A                        // ASCII LINE FEED
+    BEQ @enterJump
+    CMP #$11                        // ASCII DEVICE CONTROL 1 = ARROW LEFT
+    BEQ @arrowLeftJump
+    CMP #$12                        // ASCII DEVICE CONTROL 2 = ARROW RIGHT
+    BEQ @arrowRightJump
+    JMP @jumpTableEnd
+@backspaceJump
+    JMP @backspace
+@enterJump
+    JMP @enter
+@arrowLeftJump
+    JMP @arrowLeft
+@arrowRightJump
+    JMP @arrowRight
+@jumpTableEnd
     LDX CUR_POS_X                   // don't leave current input line
     CPX #SCREEN_WIDTH - 1
     BEQ @loop
+
+    LDX INP_BUF_CUR                 // increment input buffer/cursor
+    CPX INP_BUF_LEN
+    BNE @noInpBufIncr
+    INC INP_BUF_LEN
+@noInpBufIncr
+    INC INP_BUF_CUR
+
     JSR PRINT_CHAR
     JSR INCREMENT_CURSOR
+    JSR GET_CHAR_ON_CUR_POS
+    BNE @storeChar
+    LDA #$20                        // use ASCII SPACE instead of $00/CURSOR to store
+@storeChar
+    STA CURSOR_CHAR
 @printCursor
     LDA #$81                        // unused ASCII code is now Cursor
     JSR PRINT_CHAR
@@ -93,9 +137,20 @@ BIOS_START
     LDX CUR_POS_X                   // don't go beyond prompt
     CPX #1
     BEQ @loop
-    LDA #$20                        // SPACE
-    JSR PRINT_CHAR                  // override current pos with blank to clear cursor
+
+    LDX INP_BUF_CUR                 // decrement input buffer/cursor
+    CPX INP_BUF_LEN
+    BNE @noInpBufDecr
+    DEC INP_BUF_LEN
+@noInpBufDecr
+    DEC INP_BUF_CUR
+
+    LDA CURSOR_CHAR
+    JSR PRINT_CHAR
     JSR DECREMENT_CURSOR
+    LDA #$20                        // SPACE
+    STA CURSOR_CHAR
+    JSR PRINT_CHAR                  // override current pos with blank to clear cursor
     JMP @printCursor
 @enter
     LDA #$20                        // SPACE
@@ -108,6 +163,41 @@ BIOS_START
     BNE @printCursor
     LDA #0
     STA CUR_POS_Y
+    JMP @printCursor
+@arrowLeft
+    LDX CUR_POS_X                   // don't go beyond prompt
+    CPX #1
+    BEQ @loop
+
+    DEC INP_BUF_CUR                 // decrement input cursor
+
+    LDA CURSOR_CHAR
+    JSR PRINT_CHAR
+    JSR DECREMENT_CURSOR
+    JSR GET_CHAR_ON_CUR_POS
+    STA CURSOR_CHAR
+    JMP @printCursor
+@arrowRight
+    LDX CUR_POS_X                   // don't leave current input line
+    CPX #SCREEN_WIDTH - 1
+    BEQ @loop
+
+    LDX INP_BUF_CUR                 // increment input cursor
+    CPX INP_BUF_LEN
+    BEQ @noInpCurIncr
+    INC INP_BUF_CUR
+@noInpCurIncr
+
+    LDA CURSOR_CHAR
+    JSR PRINT_CHAR
+    JSR INCREMENT_CURSOR
+    JSR GET_CHAR_ON_CUR_POS
+    CMP #$00                        // don't exceed beyond already printed chars
+    BEQ @outsideInputString         // which is the end of the current input string
+    STA CURSOR_CHAR
+    JMP @printCursor
+@outsideInputString
+    JSR DECREMENT_CURSOR
     JMP @printCursor
 
 // ========================================
@@ -167,11 +257,17 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     BNE @shiftPressed
     LDA #0
     STA shiftPressed
-    JMP @testKeys
+    JMP @testRegister0200
+
 @shiftPressed
     LDA #1
     STA shiftPressed
-@testKeys
+
+@testRegister0200
+    LDA $0200                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0201
+
     LDA $0200                       // test all other keys
     AND #%00000001
     BNE @KeyA
@@ -196,6 +292,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0200
     AND #%10000000
     BNE @KeyH
+
+@testRegister0201
+    LDA $0201                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0202
+
     LDA $0201
     AND #%00000001
     BNE @KeyI
@@ -220,6 +322,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0201
     AND #%10000000
     BNE @KeyP
+
+@testRegister0202
+    LDA $0202                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0203
+
     LDA $0202
     AND #%00000001
     BNE @KeyQ
@@ -244,6 +352,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0202
     AND #%10000000
     BNE @KeyX
+
+@testRegister0203
+    LDA $0203                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0204
+
     LDA $0203
     AND #%00000001
     BNE @KeyY
@@ -268,6 +382,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0203
     AND #%10000000
     BNE @Digit6
+
+@testRegister0204
+    LDA $0204                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0205
+
     LDA $0204
     AND #%00000001
     BNE @Digit7
@@ -292,6 +412,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0204
     AND #%10000000
     BNE @Period
+
+@testRegister0205
+    LDA $0205                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0206
+
 /*     LDA $0205
     AND #%00000001
     BNE @Shift */
@@ -316,6 +442,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0205
     AND #%10000000
     BNE @Slash
+
+@testRegister0206
+    LDA $0206                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0207
+
     LDA $0206
     AND #%00000001
     BNE @ArrowLeft
@@ -340,6 +472,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0206
     AND #%10000000
     BNE @Backslash
+
+@testRegister0207
+    LDA $0207                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0208
+
     LDA $0207
     AND #%00000001
     BNE @F1
@@ -364,6 +502,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0207
     AND #%10000000
     BNE @F8
+
+@testRegister0208
+    LDA $0208                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @testRegister0209
+
     LDA $0208
     AND #%00000001
     BNE @F9
@@ -388,6 +532,12 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA $0208
     AND #%10000000
     BNE @IntlBackslash
+
+@testRegister0209
+    LDA $0209                       // skip to next byte if everything is 0
+    CMP #$00
+    BEQ @NoKeypress
+
     LDA $0209
     AND #%00000001
     BNE @PageUp
@@ -413,6 +563,7 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     AND #%10000000
     BNE @XXX
     JMP @NoKeypress
+
 @KeyA
     LDA #$41
     JMP @continue
@@ -558,22 +709,22 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA #$2F
     JMP @continue
 @ArrowLeft
-    LDA #$00
+    LDA #$11                            // ASCII DEVICE CONTROL 1
     JMP @continue
 @ArrowRight
-    LDA #$00
+    LDA #$12                            // ASCII DEVICE CONTROL 2
     JMP @continue
 @ArrowUp
-    LDA #$00
+    LDA #$13                            // ASCII DEVICE CONTROL 3
     JMP @continue
 @ArrowDown
-    LDA #$00
+    LDA #$14                            // ASCII DEVICE CONTROL 4
     JMP @continue
 @Enter
-    LDA #$0A                            // LINE FEED
+    LDA #$0A                            // ASCII LINE FEED
     JMP @continue
 @Backspace
-    LDA #$08                            // BACKSPACE
+    LDA #$08                            // ASCII BACKSPACE
     JMP @continue
 @Escape
     LDA #$00
@@ -814,6 +965,16 @@ PRINT_STRING                                    // prints the string with addres
     STA (TMP_CURSOR),Y                          // print char to screen
     INY
     JMP @loop
+@return
+    RTS
+
+// ========================================
+
+GET_CHAR_ON_CUR_POS
+    JSR CALCULATE_CUR_POS
+@getChar
+    LDX #0
+    LDA (TMP_CURSOR,X)                          // get char from current cursor position
 @return
     RTS
 
