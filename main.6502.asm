@@ -21,8 +21,8 @@ SCREEN_WIDTH        = 40            // 40 chars width * 8 = 320px
 SCREEN_HEIGHT       = 30            // 30 chars height * 8 = 240px
 
 // Zero Page variables
-TMP_POINTER         = $FC           // WORD $FC + $FD
-TMP_CURSOR          = $FE           // WORD $FE + $FF
+TMP_POINTER         = $FC           // WORD $FC + $FD = used by PRINT_STRING
+TMP_CURSOR          = $FE           // WORD $FE + $FF = current pos in screen mem
 
 // Screen related variables
 CUR_POS_X           = $8000
@@ -36,6 +36,9 @@ CURRENT_KEYPRESS    = $8004
 // BIOS related variables
 INP_BUF_LEN     	= $8005
 INP_BUF_CUR         = $8006
+
+SOURCE_ADDR         = $F8           // WORD $F8 + $F9
+DESTINATION_ADDR    = $FA           // WORD $FA + $FB 
 
 // ========================================
 
@@ -72,6 +75,7 @@ BIOS_START
     STA CUR_POS_X
     LDA #5
     STA CUR_POS_Y
+@prompt
     LDA #$3E                        // GREATER THAN SIGN == prompt
     JSR PRINT_CHAR
     JSR INCREMENT_CURSOR
@@ -153,17 +157,11 @@ BIOS_START
     JSR PRINT_CHAR                  // override current pos with blank to clear cursor
     JMP @printCursor
 @enter
-    LDA #$20                        // SPACE
-    JSR PRINT_CHAR                  // override current pos with blank to clear cursor
-    LDA #0                          // set cursor to next line
-    STA CUR_POS_X                   // by setting x to 0
-    INC CUR_POS_Y                   // and increasing y until
-    LDA CUR_POS_Y                   // height reached
-    CMP #SCREEN_HEIGHT              // then return to first line
-    BNE @printCursor
-    LDA #0
-    STA CUR_POS_Y
-    JMP @printCursor
+    JSR PROCESS_INP_BUF
+    LDA #0                          // new line
+    STA CUR_POS_X
+    INC CUR_POS_Y
+    JMP @prompt
 @arrowLeft
     LDX CUR_POS_X                   // don't go beyond prompt
     CPX #1
@@ -178,8 +176,9 @@ BIOS_START
     STA CURSOR_CHAR
     JMP @printCursor
 @arrowRight
-    LDX CUR_POS_X                   // don't leave current input line
-    CPX #SCREEN_WIDTH - 1
+    LDX INP_BUF_LEN                 // don't leave input buffer
+    INX                             // + 1 for prompt
+    CPX CUR_POS_X
     BEQ @loop
 
     LDX INP_BUF_CUR                 // increment input cursor
@@ -199,6 +198,74 @@ BIOS_START
 @outsideInputString
     JSR DECREMENT_CURSOR
     JMP @printCursor
+
+// ========================================
+
+commandNotFound .textz "Command not found"
+
+echoCommand .textz "echo"
+
+PROCESS_INP_BUF
+    LDA #$20                        // overwrite cursor
+    JSR PRINT_CHAR
+
+    LDX #1                          // the current input buffer is in line CUR_POS_Y after
+    LDY #0                          // the prompt and has the length INP_BUF_LEN
+@loop
+    LDA echoCommand,Y
+    CMP #$00
+    BEQ @echo
+    STX CUR_POS_X
+    JSR GET_CHAR_ON_CUR_POS
+    CMP echoCommand,Y
+    BNE @commandNotFound
+    INX
+    INY
+    JMP @loop
+@commandNotFound
+    LDX #0                          // new line
+    STX CUR_POS_X
+    INC CUR_POS_Y
+    LDX #<commandNotFound
+    LDY #>commandNotFound
+    JSR PRINT_STRING
+    JMP @return
+@echo
+    JSR ECHO_COMMAND
+@return
+    RTS
+
+// ========================================
+
+ECHO_COMMAND
+    LDX #6                          // copy start of parameter to source address
+    STX CUR_POS_X
+    JSR CALCULATE_CUR_POS
+    LDA TMP_CURSOR
+    STA SOURCE_ADDR
+    LDA TMP_CURSOR + 1
+    STA SOURCE_ADDR + 1
+
+    LDX #0                          // copy start of next line to destination address
+    STX CUR_POS_X
+    INC CUR_POS_Y
+    JSR CALCULATE_CUR_POS
+    LDA TMP_CURSOR
+    STA DESTINATION_ADDR
+    LDA TMP_CURSOR + 1
+    STA DESTINATION_ADDR + 1
+
+    LDY #0                          // copy parameter to next line until a $00 is reached
+@loop
+    LDA (SOURCE_ADDR),Y
+    CMP #$00
+    BEQ @return
+    STA (DESTINATION_ADDR),y
+    INY
+    JMP @loop
+
+@return
+    RTS
 
 // ========================================
 
@@ -905,8 +972,13 @@ TEST_SCREEN                                     // fill screen with all printabl
 
 // ========================================
 
+// calculate current cur pos
+
+// Affects: A, Y
+// Preserves: X
+
 CALCULATE_CUR_POS
-    LDA #<$0400                                 // calculate current cur pos
+    LDA #<$0400
     STA TMP_CURSOR
     LDA #>$0400
     STA TMP_CURSOR + 1
@@ -937,7 +1009,12 @@ CALCULATE_CUR_POS
 
 // ========================================
 
-PRINT_CHAR                                      // print char stored in A to screen and increment cursor
+// print char stored in A to screen and increment cursor
+
+// Affects: X
+// Preserves: A, Y
+
+PRINT_CHAR
     PHA                                         // store A to stack
     JSR CALCULATE_CUR_POS
 @printChar
@@ -949,7 +1026,12 @@ PRINT_CHAR                                      // print char stored in A to scr
 
 // ========================================
 
-PRINT_STRING                                    // prints the string with address $yyxx == $$hhll
+// prints the string with address $yyxx == $$hhll
+
+// Affects: A, Y
+// Preserves: X
+
+PRINT_STRING
     TYA
     PHA
     JSR CALCULATE_CUR_POS
@@ -957,6 +1039,7 @@ PRINT_STRING                                    // prints the string with addres
     TAY
     STX TMP_POINTER
     STY TMP_POINTER + 1
+
     LDY #0
 @loop
     LDA (TMP_POINTER),Y
@@ -965,22 +1048,42 @@ PRINT_STRING                                    // prints the string with addres
     STA (TMP_CURSOR),Y                          // print char to screen
     INY
     JMP @loop
+
 @return
     RTS
 
 // ========================================
 
+// Affects: A
+// Preserves: XY
+
+tmpCharOnCurPos .byte $00
+
 GET_CHAR_ON_CUR_POS
+    TYA
+    PHA
     JSR CALCULATE_CUR_POS
+    PLA
+    TAY
 @getChar
+    TXA
+    PHA
     LDX #0
     LDA (TMP_CURSOR,X)                          // get char from current cursor position
+    STA tmpCharOnCurPos
+    PLA
+    TAX
+    LDA tmpCharOnCurPos
 @return
     RTS
 
 // ========================================
 
 INCREMENT_CURSOR
+
+// Affects: XY
+// Preserves: A
+
 @incX
     INC CUR_POS_X                               // set cur pos to next pos
     LDX CUR_POS_X
@@ -1004,6 +1107,10 @@ INCREMENT_CURSOR
 // ========================================
 
 DECREMENT_CURSOR
+
+// Affects: XY
+// Preserves: A
+
 @decX
     DEC CUR_POS_X                               // set cur pos to previous pos
     LDX CUR_POS_X
