@@ -16,6 +16,8 @@ SOFTWARE_VECTORS    = $FFF6
 
 PROGRAM_START       = $9000
 
+SCREEN_MEM_START    = $0400
+
 // Constants
 SCREEN_WIDTH        = 40            // 40 chars width * 8 = 320px
 SCREEN_HEIGHT       = 30            // 30 chars height * 8 = 240px
@@ -33,7 +35,7 @@ CURSOR_CHAR         = $8002
 LAST_KEYPRESS       = $8003
 CURRENT_KEYPRESS    = $8004
 
-// BIOS related variables
+// TERMINAL related variables
 INP_BUF_LEN     	= $8005
 INP_BUF_CUR         = $8006
 
@@ -42,21 +44,33 @@ DESTINATION_ADDR    = $FA           // WORD $FA + $FB
 
 // ========================================
 
+ASCII_SPACE         = $20
+ASCII_GREATER_THAN  = $3E
+ASCII_CURSOR        = $81
+
+// ========================================
+
     *=PROGRAM_START
 
     //JSR TEST_SCREEN
 
-    JMP BIOS_START
+    JMP TERMINAL_START
 
 // ========================================
 
 welcomeMessageLine1 .textz "*** 65-o-fun v0.1 BIOS ***"
 welcomeMessageLine2 .textz "created by y0014984 (c) 2024"
 
+// ========================================
+
+terminalOutputBuffer .storage SCREEN_WIDTH - 1, $00
 
 // ========================================
 
-BIOS_START
+TERMINAL_START
+    LDA #ASCII_SPACE
+    JSR FILL_SCREEN
+
     LDA #7                         // print welcome screen and prompt
     STA CUR_POS_X
     LDA #1
@@ -75,24 +89,25 @@ BIOS_START
     STA CUR_POS_X
     LDA #5
     STA CUR_POS_Y
+
 @prompt
-    LDA #$3E                        // GREATER THAN SIGN == prompt
+    LDA #ASCII_GREATER_THAN         // prompt
     JSR PRINT_CHAR
     JSR INCREMENT_CURSOR
-    LDA #$81                        // unused ASCII code is now Cursor
+    LDA #ASCII_CURSOR               // unused ASCII code is now Cursor
     JSR PRINT_CHAR
-    LDA #$20                        // ASCII SPACE as the not set string under the cursor
+    LDA #ASCII_SPACE         
     STA CURSOR_CHAR
 @loop
     // DEBUG START
     LDA INP_BUF_CUR
     CLC
     ADC #$30                        // convert binary number to printable ASCII
-    STA $0400
+    STA SCREEN_MEM_START
     LDA INP_BUF_LEN
     CLC
     ADC #$30                        // convert binary number to printable ASCII
-    STA $0401
+    STA SCREEN_MEM_START + 1
     // DEBUG END
     JSR GET_CHAR_FROM_BUFFER
     CMP #$00
@@ -130,11 +145,11 @@ BIOS_START
     JSR INCREMENT_CURSOR
     JSR GET_CHAR_ON_CUR_POS
     BNE @storeChar
-    LDA #$20                        // use ASCII SPACE instead of $00/CURSOR to store
+    LDA #ASCII_SPACE                // use ASCII SPACE instead of $00/CURSOR to store
 @storeChar
     STA CURSOR_CHAR
 @printCursor
-    LDA #$81                        // unused ASCII code is now Cursor
+    LDA #ASCII_CURSOR               // unused ASCII code is now Cursor
     JSR PRINT_CHAR
     JMP @loop
 @backspace
@@ -152,15 +167,14 @@ BIOS_START
     LDA CURSOR_CHAR
     JSR PRINT_CHAR
     JSR DECREMENT_CURSOR
-    LDA #$20                        // SPACE
+    LDA #ASCII_SPACE
     STA CURSOR_CHAR
     JSR PRINT_CHAR                  // override current pos with blank to clear cursor
     JMP @printCursor
 @enter
     JSR PROCESS_INP_BUF
-    LDA #0                          // new line
-    STA CUR_POS_X
-    INC CUR_POS_Y
+    JSR NEW_LINE
+@enterContinue
     JMP @prompt
 @arrowLeft
     LDX CUR_POS_X                   // don't go beyond prompt
@@ -201,12 +215,175 @@ BIOS_START
 
 // ========================================
 
+// Affects: A
+// Preserves: X, Y
+
+NEW_LINE
+    LDA #0                          // new line
+    STA CUR_POS_X
+    INC CUR_POS_Y
+    LDA #SCREEN_HEIGHT - 1
+    CMP CUR_POS_Y
+    BNE @return
+    JSR SCROLL_UP
+    DEC CUR_POS_Y
+@return
+    RTS
+
+// ========================================
+
+// X and Y contain low byte and high byte of the zero terminated string
+
+PRINT_TERMINAL_LINE
+    JSR NEW_LINE
+    JSR PRINT_STRING
+@return
+    RTS
+
+// ========================================
+
+// Fills the screen with an ASCII character
+// A: ASCII character
+
+// Affects: A, X, Y
+
+FILL_SCREEN
+    TAX                                 // store ASCII character to X
+    LDA #<SCREEN_MEM_START
+    STA DESTINATION_ADDR
+    LDA #>SCREEN_MEM_START
+    STA DESTINATION_ADDR + 1
+
+    LDY #0
+@loop
+    TXA                                 // retrieve ASCII character from X
+    STA (DESTINATION_ADDR),Y            // store ASCII character to screen mem start
+
+    LDA #<DESTINATION_ADDR              // increment destination address
+    JSR INCREMENT_ZP_ADDRESS
+
+    LDA DESTINATION_ADDR + 1            // check if end of screen mem reached
+    CMP #>(SCREEN_MEM_START + (SCREEN_WIDTH * SCREEN_HEIGHT))
+    BNE @loop
+    LDA DESTINATION_ADDR
+    CMP #<(SCREEN_MEM_START + (SCREEN_WIDTH * SCREEN_HEIGHT))
+    BNE @loop
+@return
+    RTS
+
+// ========================================
+
+// Affects: A
+// Preserves: X, Y
+
+SCROLL_UP
+    LDA #<SCREEN_MEM_START + SCREEN_WIDTH
+    STA SOURCE_ADDR
+    LDA #>SCREEN_MEM_START + SCREEN_WIDTH
+    STA SOURCE_ADDR + 1
+
+    LDA #<SCREEN_MEM_START
+    STA DESTINATION_ADDR
+    LDA #>SCREEN_MEM_START
+    STA DESTINATION_ADDR + 1
+
+    TYA
+    PHA
+    LDY #0
+@loop
+    LDA (SOURCE_ADDR),Y
+    STA (DESTINATION_ADDR),Y
+
+    LDA #<SOURCE_ADDR                   // increment source address
+    JSR INCREMENT_ZP_ADDRESS
+
+    LDA #<DESTINATION_ADDR              // increment destination address
+    JSR INCREMENT_ZP_ADDRESS
+
+    LDA SOURCE_ADDR + 1            // check if end of screen mem reached
+    CMP #>(SCREEN_MEM_START + (SCREEN_WIDTH * SCREEN_HEIGHT))
+    BNE @loop
+    LDA SOURCE_ADDR
+    CMP #<(SCREEN_MEM_START + (SCREEN_WIDTH * SCREEN_HEIGHT))
+    BNE @loop
+
+@return
+    PLA
+    TAY
+    RTS
+
+// ========================================
+
+// Increments a WORD address stored in zero page
+// A: start of the address in zero page
+
+// Preserves: A, X, Y
+
+paramIncrZpAddr .byte $00
+
+INCREMENT_ZP_ADDRESS
+    STA paramIncrZpAddr
+    PHA
+    TXA
+    PHA
+    TYA
+    PHA
+@incrementLowByte
+    LDX paramIncrZpAddr
+    INC $00,X
+    LDA #$00
+    CMP $00,X
+    BNE @return
+@incrementHighByte
+    INC $01,X
+@return
+    PLA
+    TAY
+    PLA
+    TAX
+    PLA
+    RTS
+
+// ========================================
+
+// Decrements a WORD address stored in zero page
+// A: start of the address in zero page
+
+// Preserves: A, X, Y
+
+paramDecrZpAddr .byte $00
+
+DECREMENT_ZP_ADDRESS
+    STA paramDecrZpAddr
+    PHA
+    TXA
+    PHA
+    TYA
+    PHA
+@incrementLowByte
+    LDX paramDecrZpAddr
+    DEC $00,X
+    LDA #$00
+    CMP $00,X
+    BNE @return
+@incrementHighByte
+    DEC $01,X
+@return
+    PLA
+    TAY
+    PLA
+    TAX
+    PLA
+    RTS
+
+// ========================================
+
 commandNotFound .textz "Command not found"
 
 echoCommand .textz "echo"
 
 PROCESS_INP_BUF
-    LDA #$20                        // overwrite cursor
+    LDA #ASCII_SPACE
     JSR PRINT_CHAR
 
     LDX #1                          // the current input buffer is in line CUR_POS_Y after
@@ -223,12 +400,9 @@ PROCESS_INP_BUF
     INY
     JMP @loop
 @commandNotFound
-    LDX #0                          // new line
-    STX CUR_POS_X
-    INC CUR_POS_Y
     LDX #<commandNotFound
     LDY #>commandNotFound
-    JSR PRINT_STRING
+    JSR PRINT_TERMINAL_LINE
     JMP @return
 @echo
     JSR ECHO_COMMAND
@@ -237,7 +411,14 @@ PROCESS_INP_BUF
 
 // ========================================
 
+paramLength .byte $00
+
 ECHO_COMMAND
+    LDA INP_BUF_LEN                 // INP_BUF_LEN - 6 = length of parameter to print
+    SEC
+    SBC #5
+    STA paramLength
+
     LDX #6                          // copy start of parameter to source address
     STX CUR_POS_X
     JSR CALCULATE_CUR_POS
@@ -245,26 +426,25 @@ ECHO_COMMAND
     STA SOURCE_ADDR
     LDA TMP_CURSOR + 1
     STA SOURCE_ADDR + 1
-
-    LDX #0                          // copy start of next line to destination address
-    STX CUR_POS_X
-    INC CUR_POS_Y
-    JSR CALCULATE_CUR_POS
-    LDA TMP_CURSOR
+                    
+    LDA #<terminalOutputBuffer      // copy start of terminal output buffer to destination address
     STA DESTINATION_ADDR
-    LDA TMP_CURSOR + 1
+    LDA #>terminalOutputBuffer
     STA DESTINATION_ADDR + 1
 
     LDY #0                          // copy parameter to next line until a $00 is reached
 @loop
-    LDA (SOURCE_ADDR),Y
-    CMP #$00
+    CPY paramLength
     BEQ @return
+    LDA (SOURCE_ADDR),Y
     STA (DESTINATION_ADDR),y
     INY
     JMP @loop
 
 @return
+    LDX #<terminalOutputBuffer
+    LDY #>terminalOutputBuffer
+    JSR PRINT_TERMINAL_LINE
     RTS
 
 // ========================================
@@ -752,7 +932,7 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA #$2E
     JMP @continue
 /* @Shift
-    LDA #$20
+    LDA #ASCII_SPACE
     JMP @continue */
 @Control
     LDA #$00
@@ -770,7 +950,7 @@ READ_KEYBOARD                       // check all bits of $0200 - $0209 (hardware
     LDA #$00
     JMP @continue
 @Space
-    LDA #$20
+    LDA #ASCII_SPACE
     JMP @continue
 @Slash
     LDA #$2F
@@ -978,9 +1158,9 @@ TEST_SCREEN                                     // fill screen with all printabl
 // Preserves: X
 
 CALCULATE_CUR_POS
-    LDA #<$0400
+    LDA #<SCREEN_MEM_START
     STA TMP_CURSOR
-    LDA #>$0400
+    LDA #>SCREEN_MEM_START
     STA TMP_CURSOR + 1
 
     LDY CUR_POS_Y
