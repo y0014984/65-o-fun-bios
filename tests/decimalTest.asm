@@ -312,4 +312,7 @@ N2H:     .word $0000
 
 FUNCTION_CALL:
         jsr TEST
-        brk
+        lda ERROR
+        clc
+        adc #$30
+        sta $0400
