@@ -1,4 +1,16 @@
+// ========================================
+
 .label PROGRAM_START       = $8000
+
+.label hardwareVectors     = $FFFA
+
+.label softwareVectors     = $FFF6
+
+.label NMIB                = $FFFA
+.label RESB                = $FFFC
+.label IRQB                = $FFFE
+
+// ========================================
 
 /* 
         Verify decimal mode behavior
@@ -316,3 +328,64 @@ FUNCTION_CALL:
         clc
         adc #$30
         sta $0400
+
+// ========================================
+
+irqStart:                           // triggered by hardware or software (BRK) interrupt
+    pha                             // store A
+    txa
+    pha                             // store X
+    tya
+    pha                             // store Y
+
+    tsx                             // store stack pointer to X
+    lda $0104,X                     // $0100 = start of stack
+                                    // X = stack pointer
+                                    // +4 to get the status register
+                                    // before that A,X and Y are stored
+    and #%0001_0000                 // test break flag
+    beq !notBrk+
+    jmp (brkRoutineVector)
+!notBrk:
+    jmp (irqRoutineVector)
+
+// ========================================
+
+irqRoutine:
+
+    pla
+    tay                             // restore Y
+    pla
+    tax                             // restore X
+    pla                             // restore A
+    rti                             // return to main program
+
+// ========================================
+
+brkRoutine:
+    // do stuff
+    pla
+    tay                             // restore Y
+    pla
+    tax                             // restore X
+    pla                             // restore A
+    rti                             // return to main program
+
+// ========================================
+
+    *=softwareVectors
+
+irqRoutineVector:
+    .word irqRoutine
+brkRoutineVector:
+    .word brkRoutine
+
+// ========================================
+
+    *=hardwareVectors
+
+    .word $0000                     // NMIB
+    .word $0000                     // RESB
+    .word irqStart                  // IRQB
+
+// ========================================
