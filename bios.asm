@@ -9,7 +9,7 @@
 
 // ========================================
 
-    *=biosStart
+    *=biosStart "BIOS"
 
     //jsr testScreen
 
@@ -223,7 +223,7 @@ brkRoutine:
 
 // ========================================
 
-    *=softwareVectors
+    *=softwareVectors "Software Vectors"
 
 irqRoutineVector:
     .word irqRoutine
@@ -232,7 +232,7 @@ brkRoutineVector:
 
 // ========================================
 
-    *=hardwareVectors
+    *=hardwareVectors "Hardware Vectors"
 
     .word $0000                     // NMIB
     .word biosStart                 // RESB
