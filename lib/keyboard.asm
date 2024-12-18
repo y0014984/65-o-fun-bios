@@ -1,5 +1,11 @@
 // ========================================
 
+#importonce 
+
+#import "../constants.asm"
+
+// ========================================
+
 .label lastKeypress       = $8003
 .label currentKeypress    = $8004
 

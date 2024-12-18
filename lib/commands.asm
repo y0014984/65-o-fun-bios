@@ -1,5 +1,11 @@
 // ========================================
 
+#importonce 
+
+#import "terminal.asm"
+
+// ========================================
+
 paramLength: .byte $00
 
 echoCommand:

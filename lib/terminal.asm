@@ -1,4 +1,13 @@
- // ========================================
+// ========================================
+
+#importonce
+
+#import "../labels.asm"
+#import "../constants.asm"
+#import "util.asm"
+#import "commands.asm"
+
+// ========================================
 
 .label screenMemStart       = $0400
 

@@ -1,5 +1,11 @@
 // ========================================
 
+#importonce 
+
+#import "terminal.asm"
+
+// ========================================
+
 .const testScreenMin   = $20
 .const testScreenMax   = $7E
 
