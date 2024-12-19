@@ -20,12 +20,12 @@ incrZeropageAddr:
     pha
 !incrementLowByte:
     ldx paramIncrZpAddr
-    inc $00,X
+    inc $00,x
     lda #$00
-    cmp $00,X
+    cmp $00,x
     bne !return+
 !incrementHighByte:
-    inc $01,X
+    inc $01,x
 !return:
     pla
     tay
@@ -52,12 +52,12 @@ decrZeropageAddr:
     pha
 !incrementLowByte:
     ldx paramDecrZpAddr
-    dec $00,X
+    dec $00,x
     lda #$00
-    cmp $00,X
+    cmp $00,x
     bne !return+
 !incrementHighByte:
-    dec $01,X
+    dec $01,x
 !return:
     pla
     tay

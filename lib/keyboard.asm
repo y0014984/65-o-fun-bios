@@ -616,7 +616,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 
 addCharToBuf:
     ldx keyboardBufferPos                   // store char in keyboard buffer
-    sta keyboardBuffer,X
+    sta keyboardBuffer,x
     inc keyboardBufferPos                   // check for buffer overrun
     lda keyboardBufferPos
     cmp #16
@@ -640,7 +640,7 @@ getCharFromBuf:
     ldy #1                                  // shifting all chars one byte to the left
 !loop:
     lda keyboardBuffer,Y
-    sta keyboardBuffer,X
+    sta keyboardBuffer,x
     inx
     iny
     cpx keyboardBufferPos

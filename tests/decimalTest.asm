@@ -119,7 +119,7 @@ A1:     ora N1H
         if N1L + N2L >= $0A, then add (N2 & $F0) + $0F + 1 (carry is set)
 */
 
-        adc N2H,X
+        adc N2H,x
         php
         bcs A2
         cmp #$A0
@@ -183,7 +183,7 @@ S11:    ora N1H
         if N1L - N2L <  0, then subtract (N2 & $F0) + $0F + 1 (carry is clear)
 */
 
-        sbc N2H,X
+        sbc N2H,x
         bcs S12
         sbc #$5F  // subtract $60 (carry is clear)
 S12:    sta AR
@@ -206,7 +206,7 @@ S21:    ora N1H
         if N1L - N2L <  0, then subtract (N2 & $F0) + $0F + 1 (carry is clear)
 */
 
-        sbc N2H,X
+        sbc N2H,x
         bcs S22
         sbc #$5F   // subtract $60 (carry is clear)
 S22:    cpx #0
@@ -339,10 +339,10 @@ irqStart:                           // triggered by hardware or software (BRK) i
     pha                             // store Y
 
     tsx                             // store stack pointer to X
-    lda $0104,X                     // $0100 = start of stack
+    lda $0104,x                     // $0100 = start of stack
                                     // X = stack pointer
                                     // +4 to get the status register
-                                    // before that A,X and Y are stored
+                                    // before that A,x and Y are stored
     and #%0001_0000                 // test break flag
     beq !notBrk+
     jmp (brkRoutineVector)

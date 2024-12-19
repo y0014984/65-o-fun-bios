@@ -33,31 +33,53 @@ terminalOutputBuffer: .fill screenWidth - 1, $00
 commandNotFound: .text @"Command not found\$00"
 
 echo: .text @"echo\$00"
+clear: .text @"clear\$00"
 
 processInpBuf:
     lda #asciiSpace
     jsr printChar
 
+!echo:
     ldx #1                              // the current input buffer is in line curPosY after
     ldy #0                              // the prompt and has the length inpBufLen
 !loop:
     lda echo,Y
     cmp #$00
-    beq !echo+
+    beq !jsrEcho+
     stx curPosX
     jsr getCharOnCurPos
     cmp echo,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+
+!clear:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda clear,Y
+    cmp #$00
+    beq !jsrClear+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp clear,Y
     bne !commandNotFound+
     inx
     iny
     jmp !loop-
+
 !commandNotFound:
     ldx #<commandNotFound
     ldy #>commandNotFound
     jsr printTerminalLine
     jmp !return+
-!echo:
+!jsrEcho:
     jsr echoCommand
+    jmp !return+
+!jsrClear:
+    jsr clearCommand
+
 !return:
     rts
 
@@ -111,7 +133,7 @@ printChar:
 !print:
     pla                                 // get current char stored in A
     ldx #0
-    sta (tmpCursor,X)                   // print char to screen
+    sta (tmpCursor,x)                   // print char to screen
 !return:
     rts
 
@@ -187,7 +209,7 @@ getCharOnCurPos:
     txa
     pha
     ldx #0
-    lda (tmpCursor,X)                   // get char from current cursor position
+    lda (tmpCursor,x)                   // get char from current cursor position
     sta tmpCharOnCurPos
     pla
     tax

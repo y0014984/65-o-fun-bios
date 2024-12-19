@@ -2,6 +2,7 @@
 
 #importonce 
 
+#import "../constants.asm"
 #import "terminal.asm"
 
 // ========================================
@@ -9,7 +10,16 @@
 paramLength: .byte $00
 
 echoCommand:
+    // DEBUG START
+/*     lda inpBufLen
+    clc 
+    adc #$30
+    sta $0403 */
+    // DEBUG END
+
     lda inpBufLen                       // INP_BUF_LEN - 6 = length of parameter to print
+    cmp #6
+    bcc !return+                        // A<6 = no parameter
     sec
     sbc #5
     sta paramLength
@@ -30,16 +40,30 @@ echoCommand:
     ldy #0                              // copy parameter to next line until a $00 is reached
 !loop:
     cpy paramLength
-    beq !return+
+    beq !print+
     lda (sourceAddr),Y
     sta (destinationAddr),y
     iny
     jmp !loop-
 
-!return:
+!print:
     ldx #<terminalOutputBuffer
     ldy #>terminalOutputBuffer
     jsr printTerminalLine
+
+!return:
+    rts
+
+// ========================================
+
+clearCommand:
+    lda #asciiSpace
+    jsr fillScreen
+    lda #0
+    sta curPosX
+    lda #255
+    sta curPosY
+!return:
     rts
 
 // ========================================

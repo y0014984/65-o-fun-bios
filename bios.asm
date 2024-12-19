@@ -54,6 +54,7 @@ terminalStart:
     sta curPosY
 
 !prompt:
+    jsr resetInpBuf
     lda #asciiGreaterThan           // prompt
     jsr printChar
     jsr incrCursor
@@ -63,14 +64,14 @@ terminalStart:
     sta cursorChar
 !loop:
     // DEBUG START
-    lda inpBufCur
+/*     lda inpBufCur
     clc
     adc #$30                        // convert binary number to printable ASCII
     sta screenMemStart
     lda inpBufLen
     clc
     adc #$30                        // convert binary number to printable ASCII
-    sta screenMemStart + 1
+    sta screenMemStart + 1 */
     // DEBUG END
     jsr getCharFromBuf
     cmp #$00
@@ -180,6 +181,21 @@ terminalStart:
 
 // ========================================
 
+resetInpBuf:
+    lda #0                          // reset input buffer
+    sta inpBufLen
+    sta inpBufCur
+    ldx #0
+!loop:
+    sta terminalOutputBuffer,x
+    inx
+    cpx #screenWidth - 1
+    bne !loop-
+!return:
+    rts
+
+// ========================================
+
 irqStart:                           // triggered by hardware or software (BRK) interrupt
     pha                             // store A
     txa
@@ -188,10 +204,10 @@ irqStart:                           // triggered by hardware or software (BRK) i
     pha                             // store Y
 
     tsx                             // store stack pointer to X
-    lda $0104,X                     // $0100 = start of stack
+    lda $0104,x                     // $0100 = start of stack
                                     // X = stack pointer
                                     // +4 to get the status register
-                                    // before that A,X and Y are stored
+                                    // before that A,x and Y are stored
     and #%0001_0000                 // test break flag
     beq !notBrk+
     jmp (brkRoutineVector)
