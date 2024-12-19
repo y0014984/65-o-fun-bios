@@ -14,4 +14,4 @@ java -jar KickAss.jar bios.asm
 
 ## Run
 
-The see [65-o-fun](https://github.com/y0014984/65-o-fun) project on how to run the bios or any other user defined program.
+See [65-o-fun](https://github.com/y0014984/65-o-fun) project on how to run the bios or any other user defined program.
