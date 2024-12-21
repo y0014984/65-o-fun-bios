@@ -67,3 +67,14 @@ clearCommand:
     rts
 
 // ========================================
+
+unameString: .text @"65-o-fun v0.1 BIOS\$00"
+
+unameCommand:
+    ldx #<unameString
+    ldy #>unameString
+    jsr printTerminalLine
+!return:
+    rts
+
+// ========================================

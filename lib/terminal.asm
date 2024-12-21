@@ -33,6 +33,7 @@ terminalOutputBuffer: .fill screenWidth - 1, $00
 commandNotFound: .text @"Command not found\$00"
 
 echo: .text @"echo\$00"
+uname: .text @"uname\$00"
 clear: .text @"clear\$00"
 
 processInpBuf:
@@ -49,6 +50,21 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp echo,Y
+    bne !uname+
+    inx
+    iny
+    jmp !loop-
+
+!uname:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda uname,Y
+    cmp #$00
+    beq !jsrUname+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp uname,Y
     bne !clear+
     inx
     iny
@@ -76,6 +92,9 @@ processInpBuf:
     jmp !return+
 !jsrEcho:
     jsr echoCommand
+    jmp !return+
+!jsrUname:
+    jsr unameCommand
     jmp !return+
 !jsrClear:
     jsr clearCommand
