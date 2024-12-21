@@ -4,19 +4,22 @@
 
 // ========================================
 
-.label biosStart           = $9000
+.label foregroundColor      = $020A
+.label backgroundColor      = $020B
 
-.label hardwareVectors     = $FFFA
+.label biosStart            = $9000
 
-.label softwareVectors     = $FFF6
+.label hardwareVectors      = $FFFA
 
-.label NMIB                = $FFFA
-.label RESB                = $FFFC
-.label IRQB                = $FFFE
+.label softwareVectors      = $FFF6
+
+.label NMIB                 = $FFFA
+.label RESB                 = $FFFC
+.label IRQB                 = $FFFE
 
 // ========================================
 
-.label sourceAddr          = $F8           // WORD $F8 + $F9
-.label destinationAddr     = $FA           // WORD $FA + $FB 
+.label sourceAddr           = $F8           // WORD $F8 + $F9
+.label destinationAddr      = $FA           // WORD $FA + $FB 
 
 // ========================================
