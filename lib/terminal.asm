@@ -34,6 +34,7 @@ commandNotFound: .text @"Command not found\$00"
 
 echo: .text @"echo\$00"
 uname: .text @"uname\$00"
+date: .text @"date\$00"
 clear: .text @"clear\$00"
 
 processInpBuf:
@@ -65,6 +66,21 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp uname,Y
+    bne !date+
+    inx
+    iny
+    jmp !loop-
+
+!date:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda date,Y
+    cmp #$00
+    beq !jsrDate+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp date,Y
     bne !clear+
     inx
     iny
@@ -95,6 +111,9 @@ processInpBuf:
     jmp !return+
 !jsrUname:
     jsr unameCommand
+    jmp !return+
+!jsrDate:
+    jsr dateCommand
     jmp !return+
 !jsrClear:
     jsr clearCommand
@@ -141,7 +160,7 @@ calcCurPos:
 
 // ========================================
 
-// print char stored in A to screen and increment cursor
+// print char stored in A to screen
 
 // Affects: X
 // Preserves: A, Y
@@ -240,7 +259,7 @@ getCharOnCurPos:
 
 incrCursor:
 
-// Affects: XY
+// Affects: X, Y
 // Preserves: A
 
 !incX:

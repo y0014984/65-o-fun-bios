@@ -23,3 +23,12 @@
 .label destinationAddr      = $FA           // WORD $FA + $FB 
 
 // ========================================
+
+.label dateTimeYear         = $020C
+.label dateTimeWeekdayMonth = $020E
+.label dateTimeDay          = $020F
+.label dateTimeHours        = $0210
+.label dateTimeMinutes      = $0211
+.label dateTimeSeconds      = $0212
+
+// ========================================
