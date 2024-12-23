@@ -210,3 +210,79 @@ dateCommand:
 
 // ========================================
 
+// the output of this command could be precalculated
+// with Kick Assembler scripting
+
+helpString: .fill screenWidth, $00
+
+helpCommand:
+    ldx #0
+    ldy #0
+!loop:
+    cpy #screenWidth - 1
+    beq !print+
+    lda commandList,x
+    cmp #$00
+    beq !addComma+
+    sta helpString,y
+    inx
+    iny
+    jmp !loop-
+
+!addComma:
+    lda commandList+1,x
+    cmp #$00
+    beq !printAndReturn+
+    lda #asciiComma
+    sta helpString,y
+    inx
+    iny
+    jmp !loop-
+
+!print:
+    jsr printHelpString
+    jsr clearHelpString
+    ldy #0
+    jmp !loop-
+
+!printAndReturn:
+    jsr printHelpString
+    jsr clearHelpString
+
+!return:
+    rts
+
+// --------------------
+
+printHelpString:
+    txa
+    pha
+    tya
+    pha
+    ldx #<helpString
+    ldy #>helpString
+    jsr printTerminalLine
+!return:
+    pla
+    tay
+    pla
+    tax
+    rts
+
+// --------------------
+
+clearHelpString:
+    tya
+    ldy #0
+!loop:
+    lda #$00
+    sta helpString,y
+    iny
+    cpy #screenWidth
+    beq !return+
+    jmp !loop-
+!return:
+    tay
+    rts
+
+// ========================================

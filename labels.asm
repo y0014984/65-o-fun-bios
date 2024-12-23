@@ -22,7 +22,7 @@
 // ========================================
 
 .label sourceAddr           = $F8           // WORD $F8 + $F9
-.label destinationAddr      = $FA           // WORD $FA + $FB 
+.label destinationAddr      = $FA           // WORD $FA + $FB
 
 // ========================================
 

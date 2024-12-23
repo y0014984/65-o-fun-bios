@@ -11,9 +11,6 @@
 
 .label screenMemStart       = $0400
 
-.const screenWidth          = 40        // 40 chars width * 8 = 320px
-.const screenHeight         = 30        // 30 chars height * 8 = 240px
-
 .label tmpPointer           = $FC       // WORD $FC + $FD = used by PRINT_STRING
 .label tmpCursor            = $FE       // WORD $FE + $FF = current pos in screen mem
 
@@ -32,10 +29,22 @@ terminalOutputBuffer: .fill screenWidth - 1, $00
 
 commandNotFound: .text @"Command not found\$00"
 
+commandList:
 echo: .text @"echo\$00"
 uname: .text @"uname\$00"
 date: .text @"date\$00"
+help: .text @"help\$00"
+
+/* history: .text @"history\$00"
+shutdown: .text @"shutdown\$00"
+ls: .text @"ls\$00"
+pwd: .text @"pwd\$00"
+cd: .text @"cd\$00"
+mkdir: .text @"mkdir\$00"
+rmdir: .text @"rmdir\$00" */
+
 clear: .text @"clear\$00"
+.byte $00
 
 processInpBuf:
     lda #asciiSpace
@@ -55,6 +64,9 @@ processInpBuf:
     inx
     iny
     jmp !loop-
+!jsrEcho:
+    jsr echoCommand
+    jmp !return+
 
 !uname:
     ldx #1                              // the current input buffer is in line curPosY after
@@ -70,6 +82,9 @@ processInpBuf:
     inx
     iny
     jmp !loop-
+!jsrUname:
+    jsr unameCommand
+    jmp !return+
 
 !date:
     ldx #1                              // the current input buffer is in line curPosY after
@@ -81,10 +96,31 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp date,Y
+    bne !help+
+    inx
+    iny
+    jmp !loop-
+!jsrDate:
+    jsr dateCommand
+    jmp !return+
+
+!help:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda help,Y
+    cmp #$00
+    beq !jsrHelp+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp help,Y
     bne !clear+
     inx
     iny
     jmp !loop-
+!jsrHelp:
+    jsr helpCommand
+    jmp !return+
 
 !clear:
     ldx #1                              // the current input buffer is in line curPosY after
@@ -100,23 +136,14 @@ processInpBuf:
     inx
     iny
     jmp !loop-
+!jsrClear:
+    jsr clearCommand
+    jmp !return+
 
 !commandNotFound:
     ldx #<commandNotFound
     ldy #>commandNotFound
     jsr printTerminalLine
-    jmp !return+
-!jsrEcho:
-    jsr echoCommand
-    jmp !return+
-!jsrUname:
-    jsr unameCommand
-    jmp !return+
-!jsrDate:
-    jsr dateCommand
-    jmp !return+
-!jsrClear:
-    jsr clearCommand
 
 !return:
     rts
