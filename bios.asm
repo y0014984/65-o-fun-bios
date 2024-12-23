@@ -9,9 +9,27 @@
 
 // ========================================
 
+.segmentdef Registers [start=$0200]
+.segmentdef BIOS [outPrg="bios.prg"]
+
+.segment Registers                  // reserved 256 bytes
+
+.fill 256, $00
+
+.segment BIOS
+
+// ========================================
+
+    *=fontStart "Font"
+
+#import "lib/font.asm"
+
+// ========================================
+
     *=biosStart "BIOS"
 
     //jsr testScreen
+    //jsr testFontWrite
 
     jmp terminalStart
 

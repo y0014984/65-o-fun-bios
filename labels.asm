@@ -9,6 +9,8 @@
 
 .label biosStart            = $9000
 
+.label fontStart            = $D000
+
 .label hardwareVectors      = $FFFA
 
 .label softwareVectors      = $FFF6

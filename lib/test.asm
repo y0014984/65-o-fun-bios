@@ -40,3 +40,34 @@ testScreen:                             // fill screen with all printable chars
     rts
 
 // ========================================
+
+testFontWrite:
+    lda #%01010101
+    sta $d000+32
+    lda #%10101010
+    sta $d001+32
+    lda #%01010101
+    sta $d002+32
+    lda #%10101010
+    sta $d003+32
+    lda #%01010101
+    sta $d004+32
+    lda #%10101010
+    sta $d005+32
+    lda #%01010101
+    sta $d006+32
+    lda #%10101010
+    sta $d007+32
+
+    lda #$23
+    sta $0400
+    lda #$00+4
+    sta $0401
+    lda #$23
+    sta $0402
+!loop:
+    jmp !loop-
+!return:
+    rts
+
+// ========================================
