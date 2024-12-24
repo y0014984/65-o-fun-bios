@@ -34,3 +34,12 @@
 .label dateTimeSeconds      = $0212
 
 // ========================================
+
+.label storageAddrBufRW     = $0217         // WORD $0217 + $0218
+.label storageLenBufRW      = $0219
+.label storageAddrBufCom    = $021A         // WORD $021A + $021B
+.label storageLenBufCom     = $021C
+.label storageComRetVal     = $021D
+.label storageComFlow       = $021F
+
+// ========================================

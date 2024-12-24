@@ -5,6 +5,8 @@
 #import "../labels.asm"
 #import "terminal.asm"
 
+#import "storage.asm"
+
 // ========================================
 
 .const testScreenMin   = $20
@@ -67,6 +69,55 @@ testFontWrite:
     sta $0402
 !loop:
     jmp !loop-
+!return:
+    rts
+
+// ========================================
+
+testStorage:
+!getFilesystemObjectCount:
+    lda #'F'
+    sta tmpCommandBuffer
+    lda #'O'
+    sta tmpCommandBuffer+1
+    lda #'C'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+!waitForResult:
+    lda storageComFlow
+    cmp #commandFlowDone
+    bne !waitForResult-
+    lda storageComRetVal
+
+!getFilesystemObjectType:
+    lda #'G'
+    sta tmpCommandBuffer
+    lda #'F'
+    sta tmpCommandBuffer+1
+    lda #'T'
+    sta tmpCommandBuffer+2
+    lda #2
+    sta tmpCommandBuffer+3
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+!waitForResult:
+    lda storageComFlow
+    cmp #commandFlowDone
+    bne !waitForResult-
+    lda storageComRetVal
+    ldx tmpReadWriteBuffer
+
+    brk
+    nop
+
+!loop:
+    jmp !loop-
+
 !return:
     rts
 

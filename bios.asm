@@ -9,10 +9,15 @@
 
 // ========================================
 
-.segmentdef Registers [start=$0200]
+.segmentdef Registers [start=$0200, virtual]
+.segmentdef Buffers [start=$0300, virtual]
 .segmentdef BIOS [outPrg="bios.prg"]
 
 .segment Registers                  // reserved 256 bytes
+
+.fill 256, $00
+
+.segment Buffers
 
 .fill 256, $00
 
@@ -28,8 +33,13 @@
 
     *=biosStart "BIOS"
 
+    jsr initStorage
+
+// ========================================
+
     //jsr testScreen
     //jsr testFontWrite
+    //jsr testStorage
 
     jmp terminalStart
 
@@ -38,6 +48,7 @@
 #import "lib/commands.asm"
 #import "lib/keyboard.asm"
 #import "lib/terminal.asm"
+#import "lib/storage.asm"
 #import "lib/test.asm"
 #import "lib/util.asm"
 

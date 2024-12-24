@@ -34,10 +34,10 @@ echo: .text @"echo\$00"
 uname: .text @"uname\$00"
 date: .text @"date\$00"
 help: .text @"help\$00"
+ls: .text @"ls\$00"
 
 /* history: .text @"history\$00"
 shutdown: .text @"shutdown\$00"
-ls: .text @"ls\$00"
 pwd: .text @"pwd\$00"
 cd: .text @"cd\$00"
 mkdir: .text @"mkdir\$00"
@@ -114,12 +114,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp help,Y
-    bne !clear+
+    bne !ls+
     inx
     iny
     jmp !loop-
 !jsrHelp:
     jsr helpCommand
+    jmp !return+
+
+!ls:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda ls,Y
+    cmp #$00
+    beq !jsrLs+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp ls,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrLs:
+    jsr lsCommand
     jmp !return+
 
 !clear:

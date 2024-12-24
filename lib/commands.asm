@@ -4,6 +4,7 @@
 
 #import "../constants.asm"
 #import "terminal.asm"
+#import "storage.asm"
 
 // ========================================
 
@@ -283,6 +284,180 @@ clearHelpString:
     jmp !loop-
 !return:
     tay
+    rts
+
+// ========================================
+
+lsHeadlineString: .text @" ID Type  Size Name\$00"
+fsObjectCount: .byte $00
+fsObjectIndex: .byte $00
+fsObjectType: .byte $00
+lsString: .fill screenWidth-1, $20
+.byte $00
+
+lsCommand:
+    ldx #<lsHeadlineString
+    ldy #>lsHeadlineString
+    jsr printTerminalLine
+
+    jsr getFilesystemObjectCount
+    sta fsObjectCount
+
+    lda #0
+    sta fsObjectIndex
+!loop:
+    lda fsObjectIndex
+    cmp fsObjectCount
+    beq !return+
+    jsr print8
+
+    ldx #0
+!copyIndex:
+    lda num8Digits+0
+    sta lsString+0,x
+    lda num8Digits+1
+    sta lsString+1,x
+    lda num8Digits+2
+    sta lsString+2,x
+
+    jsr getType
+
+    jsr getSize
+
+    jsr getName
+
+!printLine:
+    ldx #<lsString
+    ldy #>lsString
+    jsr printTerminalLine
+    jsr clearLsString
+    inc fsObjectIndex
+    jmp !loop-
+
+!return:
+    rts
+
+// --------------------
+
+getName:
+    lda fsObjectIndex
+    jsr getFilesystemObjectName
+
+!copyName:
+    ldy #0
+    ldx #15
+!loop:
+    lda tmpReadWriteBuffer,y
+    cmp #$00
+    beq !return+
+    sta lsString,x
+    iny
+    inx
+    jmp !loop-
+
+!return:
+    rts
+
+// --------------------
+
+getSize:
+    lda fsObjectType
+    cmp #fsoTypeDirectory
+    bne !getSize+
+
+!noSize:
+    ldx #9
+    lda #'-'
+    sta lsString+0,x
+    lda #'-'
+    sta lsString+1,x
+    lda #'-'
+    sta lsString+2,x
+    lda #'-'
+    sta lsString+3,x
+    lda #'-'
+    sta lsString+4,x
+    jmp !return+
+
+!getSize:
+    lda fsObjectIndex
+    jsr getFileSize
+    tya
+    jsr print16
+
+    ldx #9
+!copySize:
+    lda num16Digits+0
+    sta lsString+0,x
+    lda num16Digits+1
+    sta lsString+1,x
+    lda num16Digits+2
+    sta lsString+2,x
+    lda num16Digits+3
+    sta lsString+3,x
+    lda num16Digits+4
+    sta lsString+4,x
+
+!return:
+    rts
+
+// --------------------
+
+getType:
+    lda fsObjectIndex
+    jsr getFilesystemObjectType
+    txa
+    sta fsObjectType
+    ldx #5
+    cmp #fsoTypeDirectory
+    beq !printTypeDirectory+
+    cmp #fsoTypeFile
+    beq !printTypeFile+
+    cmp #fsoTypeProgram
+    beq !printTypeProgram+
+
+!printTypeDirectory:
+    lda #'D'
+    sta lsString+0,x
+    lda #'I'
+    sta lsString+1,x
+    lda #'R'
+    sta lsString+2,x
+    jmp !return+
+
+!printTypeFile:
+    lda #'F'
+    sta lsString+0,x
+    lda #'I'
+    sta lsString+1,x
+    lda #'L'
+    sta lsString+2,x
+    jmp !return+
+
+!printTypeProgram:
+    lda #'P'
+    sta lsString+0,x
+    lda #'R'
+    sta lsString+1,x
+    lda #'G'
+    sta lsString+2,x
+    jmp !return+
+
+!return:
+    rts
+
+// --------------------
+
+clearLsString:
+    ldy #0
+!loop:
+    lda #$20
+    sta lsString,y
+    iny
+    cpy #screenWidth - 1
+    beq !return+
+    jmp !loop-
+!return:
     rts
 
 // ========================================

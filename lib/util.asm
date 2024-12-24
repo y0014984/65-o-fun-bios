@@ -87,6 +87,11 @@ print8:
     ldx #0
     stx acc+1
 
+    lda #$20
+    sta num8Digits+0
+    sta num8Digits+1
+    sta num8Digits+2
+
     ldx #2
 !nextDigit:
     jsr divide
@@ -117,11 +122,11 @@ print8:
 
 !printZero:
     lda #'0'
-    sta num8Digits,x
+    sta num8Digits-1,x
     rts
 
 num8: .byte $00, $00, $00
-num8Digits: .byte $00, $00, $00
+num8Digits: .byte $20, $20, $20
 
 // ========================================
 
@@ -131,6 +136,13 @@ num8Digits: .byte $00, $00, $00
 print16:
     stx acc
     sta acc+1
+
+    lda #$20
+    sta num16Digits+0
+    sta num16Digits+1
+    sta num16Digits+2
+    sta num16Digits+3
+    sta num16Digits+4
 
     ldx #4
 !nextDigit:
@@ -162,7 +174,7 @@ print16:
 
 !printZero:
     lda #'0'
-    sta num16Digits,x
+    sta num16Digits-1,x
     rts
 
 num16: .byte $00, $00, $00, $00, $00
