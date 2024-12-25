@@ -30,20 +30,16 @@ terminalOutputBuffer: .fill screenWidth - 1, $00
 commandNotFound: .text @"Command not found\$00"
 
 commandList:
-echo: .text @"echo\$00"
-uname: .text @"uname\$00"
+cd: .text @"cd\$00"
+clear: .text @"clear\$00"
 date: .text @"date\$00"
+echo: .text @"echo\$00"
 help: .text @"help\$00"
 ls: .text @"ls\$00"
-cd: .text @"cd\$00"
-pwd: .text @"pwd\$00"
-
-/* history: .text @"history\$00"
-shutdown: .text @"shutdown\$00"
 mkdir: .text @"mkdir\$00"
-rmdir: .text @"rmdir\$00" */
+pwd: .text @"pwd\$00"
+uname: .text @"uname\$00"
 
-clear: .text @"clear\$00"
 .byte $00
 
 processInpBuf:
@@ -168,12 +164,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp pwd,Y
-    bne !clear+
+    bne !mkdir+
     inx
     iny
     jmp !loop-
 !jsrPwd:
     jsr pwdCommand
+    jmp !return+
+
+!mkdir:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda mkdir,Y
+    cmp #$00
+    beq !jsrMkdir+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp mkdir,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrMkdir:
+    jsr mkdirCommand
     jmp !return+
 
 !clear:
@@ -313,28 +327,62 @@ printTerminalLine:
 
 // ========================================
 
+errNoSuchFileOrDir: .text @"No such file or directory\$00"
+errNotDir: .text @"Not a directory\$00"
+errIsDir: .text @"Is a directory\$00"
+errMissingParam: .text @"Missing parameter\$00"
+errDirExists: .text @"Directory exists\$00"
+errFileExists: .text @"File exists\$00"
+
 errorUnknown: .text @"Unknown error\$00"
-errorNoSuchFileOrDir: .text @"No such file or directory\$00"
-errorNotDir: .text @"Not a directory\$00"
 
 printError:
-    cmp #errNoFileOrDir
+    cmp #errCodeMissingParam
+    beq !errMissingParam+
+    cmp #errCodeNoFileOrDir
     beq !errNoFileOrDir+
-    cmp #errNotDir
+    cmp #errCodeNotDir
     beq !errNotDir+
-    jmp !unknownError+
+    cmp #errCodeIsDir
+    beq !errIsDir+
+    cmp #errCodeDirExists
+    beq !errDirExists+
+    cmp #errCodeFileExists
+    beq !errFileExists+
+
+    jmp !errorUnknown+
 
 !errNoFileOrDir:
-    ldx #<errorNoSuchFileOrDir
-    ldy #>errorNoSuchFileOrDir
+    ldx #<errNoSuchFileOrDir
+    ldy #>errNoSuchFileOrDir
     jmp !printError+
 
 !errNotDir:
-    ldx #<errorNotDir
-    ldy #>errorNotDir
+    ldx #<errNotDir
+    ldy #>errNotDir
     jmp !printError+
 
-!unknownError:
+!errIsDir:
+    ldx #<errIsDir
+    ldy #>errIsDir
+    jmp !printError+
+
+!errMissingParam:
+    ldx #<errMissingParam
+    ldy #>errMissingParam
+    jmp !printError+
+
+!errDirExists:
+    ldx #<errDirExists
+    ldy #>errDirExists
+    jmp !printError+
+
+!errFileExists:
+    ldx #<errFileExists
+    ldy #>errFileExists
+    jmp !printError+
+
+!errorUnknown:
     ldx #<errorUnknown
     ldy #>errorUnknown
 

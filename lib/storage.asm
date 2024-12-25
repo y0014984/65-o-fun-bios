@@ -147,9 +147,29 @@ gotoDirectory:
 
 // ========================================
 
+createDirectory:
+    lda #'C'
+    sta tmpCommandBuffer
+    lda #'D'
+    sta tmpCommandBuffer+1
+    lda #'I'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
 getWorkingDirectory:
     jsr clearReadWriteBuffer
-    
+
     lda #'G'
     sta tmpCommandBuffer
     lda #'W'

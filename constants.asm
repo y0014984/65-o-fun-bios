@@ -24,7 +24,11 @@
 .const fsoTypeFile          = $99
 .const fsoTypeProgram       = $87
 
-.const errNoFileOrDir       = $C1
-.const errNotDir            = $A1
+.const errCodeNoFileOrDir   = $C1
+.const errCodeNotDir        = $A1
+.const errCodeIsDir         = $91
+.const errCodeMissingParam  = $89
+.const errCodeDirExists     = $85
+.const errCodeFileExists    = $83
 
 // ========================================
