@@ -498,3 +498,44 @@ cdCommand:
     rts
 
 // ========================================
+
+pwdString: .fill screenWidth-1, $20
+
+pwdCommand:
+    jsr getWorkingDirectory
+
+!copyPath:
+    ldx #0
+!loop:
+    lda tmpReadWriteBuffer,x
+    cmp #$00
+    beq !printLine+
+    sta pwdString,x
+    iny
+    inx
+    jmp !loop-
+
+!printLine:
+    ldx #<pwdString
+    ldy #>pwdString
+    jsr printTerminalLine
+    jsr clearPwdString
+
+!return:
+    rts
+
+// --------------------
+
+clearPwdString:
+    ldy #0
+!loop:
+    lda #$20
+    sta pwdString,y
+    iny
+    cpy #screenWidth - 1
+    beq !return+
+    jmp !loop-
+!return:
+    rts
+
+// ========================================

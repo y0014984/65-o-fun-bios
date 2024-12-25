@@ -36,10 +36,10 @@ date: .text @"date\$00"
 help: .text @"help\$00"
 ls: .text @"ls\$00"
 cd: .text @"cd\$00"
+pwd: .text @"pwd\$00"
 
 /* history: .text @"history\$00"
 shutdown: .text @"shutdown\$00"
-pwd: .text @"pwd\$00"
 mkdir: .text @"mkdir\$00"
 rmdir: .text @"rmdir\$00" */
 
@@ -150,12 +150,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp cd,Y
-    bne !clear+
+    bne !pwd+
     inx
     iny
     jmp !loop-
 !jsrCd:
     jsr cdCommand
+    jmp !return+
+
+!pwd:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda pwd,Y
+    cmp #$00
+    beq !jsrPwd+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp pwd,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrPwd:
+    jsr pwdCommand
     jmp !return+
 
 !clear:

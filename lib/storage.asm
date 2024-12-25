@@ -46,7 +46,6 @@ getFilesystemObjectCount:
     sta storageComFlow
 
     jsr waitForStorageResult
-    jsr clearCommandBuffer
 
     lda storageComRetVal
 
@@ -69,7 +68,6 @@ getFilesystemObjectType:
     sta storageComFlow
 
     jsr waitForStorageResult
-    jsr clearCommandBuffer
 
     lda storageComRetVal
     ldx tmpReadWriteBuffer
@@ -95,7 +93,6 @@ getFileSize:
     sta storageComFlow
 
     jsr waitForStorageResult
-    jsr clearCommandBuffer
 
     lda storageComRetVal
     ldx tmpReadWriteBuffer
@@ -122,7 +119,6 @@ getFilesystemObjectName:
     sta storageComFlow
 
     jsr waitForStorageResult
-    jsr clearCommandBuffer
 
     lda storageComRetVal
 
@@ -132,7 +128,6 @@ getFilesystemObjectName:
 // ========================================
 
 gotoDirectory:
-
     lda #'G'
     sta tmpCommandBuffer
     lda #'T'
@@ -144,7 +139,28 @@ gotoDirectory:
     sta storageComFlow
 
     jsr waitForStorageResult
-    jsr clearCommandBuffer
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
+getWorkingDirectory:
+    jsr clearReadWriteBuffer
+    
+    lda #'G'
+    sta tmpCommandBuffer
+    lda #'W'
+    sta tmpCommandBuffer+1
+    lda #'D'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
 
     lda storageComRetVal
 
@@ -158,6 +174,8 @@ waitForStorageResult:
     lda storageComFlow
     cmp #commandFlowDone
     bne !loop-
+
+    jsr clearCommandBuffer
 
 !return:
     rts
