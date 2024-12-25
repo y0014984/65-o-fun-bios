@@ -54,6 +54,7 @@
 
 welcomeMessageLine1: .text @"*** 65-o-fun v0.1 BIOS ***\$00"
 welcomeMessageLine2: .text @"created by y0014984 (c) 2024\$00"
+welcomeMessageLine3: .text @"type 'help' for command list\$00"
 
 // ========================================
 
@@ -68,6 +69,7 @@ terminalStart:
     ldx #<welcomeMessageLine1
     ldy #>welcomeMessageLine1
     jsr printString
+
     lda #6
     sta curPosX
     lda #3
@@ -75,9 +77,18 @@ terminalStart:
     ldx #<welcomeMessageLine2
     ldy #>welcomeMessageLine2
     jsr printString
-    lda #0
+
+    lda #6
     sta curPosX
     lda #5
+    sta curPosY
+    ldx #<welcomeMessageLine3
+    ldy #>welcomeMessageLine3
+    jsr printString
+
+    lda #0
+    sta curPosX
+    lda #7
     sta curPosY
 
 !prompt:
