@@ -35,11 +35,11 @@ uname: .text @"uname\$00"
 date: .text @"date\$00"
 help: .text @"help\$00"
 ls: .text @"ls\$00"
+cd: .text @"cd\$00"
 
 /* history: .text @"history\$00"
 shutdown: .text @"shutdown\$00"
 pwd: .text @"pwd\$00"
-cd: .text @"cd\$00"
 mkdir: .text @"mkdir\$00"
 rmdir: .text @"rmdir\$00" */
 
@@ -132,12 +132,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp ls,Y
-    bne !clear+
+    bne !cd+
     inx
     iny
     jmp !loop-
 !jsrLs:
     jsr lsCommand
+    jmp !return+
+
+!cd:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda cd,Y
+    cmp #$00
+    beq !jsrCd+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp cd,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrCd:
+    jsr cdCommand
     jmp !return+
 
 !clear:
@@ -272,6 +290,39 @@ newLine:
 printTerminalLine:
     jsr newLine
     jsr printString
+!return:
+    rts
+
+// ========================================
+
+errorUnknown: .text @"Unknown error\$00"
+errorNoSuchFileOrDir: .text @"No such file or directory\$00"
+errorNotDir: .text @"Not a directory\$00"
+
+printError:
+    cmp #errNoFileOrDir
+    beq !errNoFileOrDir+
+    cmp #errNotDir
+    beq !errNotDir+
+    jmp !unknownError+
+
+!errNoFileOrDir:
+    ldx #<errorNoSuchFileOrDir
+    ldy #>errorNoSuchFileOrDir
+    jmp !printError+
+
+!errNotDir:
+    ldx #<errorNotDir
+    ldy #>errorNotDir
+    jmp !printError+
+
+!unknownError:
+    ldx #<errorUnknown
+    ldy #>errorUnknown
+
+!printError:
+    jsr printTerminalLine
+
 !return:
     rts
 

@@ -7,9 +7,9 @@
 .label foregroundColor      = $020A
 .label backgroundColor      = $020B
 
-.label biosStart            = $9000
+.label biosStart            = $D000
 
-.label fontStart            = $D000
+.label fontStart            = $F400
 
 .label hardwareVectors      = $FFFA
 
@@ -40,6 +40,7 @@
 .label storageAddrBufCom    = $021A         // WORD $021A + $021B
 .label storageLenBufCom     = $021C
 .label storageComRetVal     = $021D
+.label storageComLastErr    = $021E
 .label storageComFlow       = $021F
 
 // ========================================

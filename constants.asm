@@ -22,6 +22,9 @@
 
 .const fsoTypeDirectory     = $E1
 .const fsoTypeFile          = $99
-.const fsoTypeProgram       = $87 
+.const fsoTypeProgram       = $87
+
+.const errNoFileOrDir       = $C1
+.const errNotDir            = $A1
 
 // ========================================

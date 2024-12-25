@@ -11,21 +11,14 @@
 paramLength: .byte $00
 
 echoCommand:
-    // DEBUG START
-/*     lda inpBufLen
-    clc 
-    adc #$30
-    sta $0403 */
-    // DEBUG END
-
-    lda inpBufLen                       // INP_BUF_LEN - 6 = length of parameter to print
+    lda inpBufLen                           // INP_BUF_LEN - 6 = length of parameter to print
     cmp #6
-    bcc !return+                        // A<6 = no parameter
+    bcc !return+                            // A<6 = no parameter
     sec
     sbc #5
     sta paramLength
 
-    ldx #6                              // copy start of parameter to source address
+    ldx #6                                  // copy start of parameter to source address
     stx curPosX
     jsr calcCurPos
     lda tmpCursor
@@ -33,12 +26,12 @@ echoCommand:
     lda tmpCursor + 1
     sta sourceAddr + 1
                     
-    lda #<terminalOutputBuffer          // copy start of terminal output buffer to destination address
+    lda #<terminalOutputBuffer              // copy start of terminal output buffer to destination address
     sta destinationAddr
     lda #>terminalOutputBuffer
     sta destinationAddr + 1
 
-    ldy #0                              // copy parameter to next line until a $00 is reached
+    ldy #0                                  // copy parameter to next line until a $00 is reached
 !loop:
     cpy paramLength
     beq !print+
@@ -457,6 +450,50 @@ clearLsString:
     cpy #screenWidth - 1
     beq !return+
     jmp !loop-
+!return:
+    rts
+
+// ========================================
+
+cdCommand:
+    lda inpBufLen                           // INP_BUF_LEN - 4 = length of parameter to print
+    cmp #4
+    bcc !return+                            // A<4 = no parameter
+    sec
+    sbc #3
+    sta paramLength
+
+    ldx #4                                  // copy start of parameter to source address
+    stx curPosX
+    jsr calcCurPos
+    lda tmpCursor
+    sta sourceAddr
+    lda tmpCursor + 1
+    sta sourceAddr + 1
+                    
+    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    sta destinationAddr
+    lda #>tmpCommandBuffer+3
+    sta destinationAddr + 1
+
+    ldy #0                                  // copy parameter to next line until a $00 is reached
+!loop:
+    cpy paramLength
+    beq !gotoDir+
+    lda (sourceAddr),Y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+
+!gotoDir:
+    jsr gotoDirectory
+    cmp #$FF
+    beq !return+
+
+!printError:
+    lda storageComLastErr
+    jsr printError
+
 !return:
     rts
 

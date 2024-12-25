@@ -131,6 +131,28 @@ getFilesystemObjectName:
 
 // ========================================
 
+gotoDirectory:
+
+    lda #'G'
+    sta tmpCommandBuffer
+    lda #'T'
+    sta tmpCommandBuffer+1
+    lda #'D'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+    jsr clearCommandBuffer
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
 waitForStorageResult:
 !loop:
     lda storageComFlow
