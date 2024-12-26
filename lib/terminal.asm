@@ -39,6 +39,7 @@ ls: .text @"ls\$00"
 mkdir: .text @"mkdir\$00"
 pwd: .text @"pwd\$00"
 rmdir: .text @"rmdir\$00"
+touch: .text @"touch\$00"
 uname: .text @"uname\$00"
 
 .byte $00
@@ -201,12 +202,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp rmdir,Y
-    bne !clear+
+    bne !touch+
     inx
     iny
     jmp !loop-
 !jsrRmdir:
     jsr rmdirCommand
+    jmp !return+
+
+!touch:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda touch,Y
+    cmp #$00
+    beq !jsrTouch+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp touch,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrTouch:
+    jsr touchCommand
     jmp !return+
 
 !clear:

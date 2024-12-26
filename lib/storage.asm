@@ -187,6 +187,26 @@ removeDirectory:
 
 // ========================================
 
+createFile:
+    lda #'C'
+    sta tmpCommandBuffer
+    lda #'R'
+    sta tmpCommandBuffer+1
+    lda #'F'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
 getWorkingDirectory:
     jsr clearReadWriteBuffer
 
