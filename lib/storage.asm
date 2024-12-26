@@ -150,9 +150,29 @@ gotoDirectory:
 createDirectory:
     lda #'C'
     sta tmpCommandBuffer
-    lda #'D'
+    lda #'R'
     sta tmpCommandBuffer+1
-    lda #'I'
+    lda #'D'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
+removeDirectory:
+    lda #'R'
+    sta tmpCommandBuffer
+    lda #'M'
+    sta tmpCommandBuffer+1
+    lda #'D'
     sta tmpCommandBuffer+2
 
     lda #commandFlowReady

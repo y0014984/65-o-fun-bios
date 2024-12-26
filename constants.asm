@@ -30,5 +30,6 @@
 .const errCodeMissingParam  = $89
 .const errCodeDirExists     = $85
 .const errCodeFileExists    = $83
+.const errCodeDirNotEmpty   = $E1
 
 // ========================================

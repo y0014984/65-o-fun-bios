@@ -38,6 +38,7 @@ help: .text @"help\$00"
 ls: .text @"ls\$00"
 mkdir: .text @"mkdir\$00"
 pwd: .text @"pwd\$00"
+rmdir: .text @"rmdir\$00"
 uname: .text @"uname\$00"
 
 .byte $00
@@ -182,12 +183,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp mkdir,Y
-    bne !clear+
+    bne !rmdir+
     inx
     iny
     jmp !loop-
 !jsrMkdir:
     jsr mkdirCommand
+    jmp !return+
+
+!rmdir:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda rmdir,Y
+    cmp #$00
+    beq !jsrRmdir+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp rmdir,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrRmdir:
+    jsr rmdirCommand
     jmp !return+
 
 !clear:
@@ -333,6 +352,7 @@ errIsDir: .text @"Is a directory\$00"
 errMissingParam: .text @"Missing parameter\$00"
 errDirExists: .text @"Directory exists\$00"
 errFileExists: .text @"File exists\$00"
+errDirNotEmpty: .text @"Directory not empty\$00"
 
 errorUnknown: .text @"Unknown error\$00"
 
@@ -349,6 +369,8 @@ printError:
     beq !errDirExists+
     cmp #errCodeFileExists
     beq !errFileExists+
+    cmp #errCodeDirNotEmpty
+    beq !errDirNotEmpty+
 
     jmp !errorUnknown+
 
@@ -380,6 +402,11 @@ printError:
 !errFileExists:
     ldx #<errFileExists
     ldy #>errFileExists
+    jmp !printError+
+
+!errDirNotEmpty:
+    ldx #<errDirNotEmpty
+    ldy #>errDirNotEmpty
     jmp !printError+
 
 !errorUnknown:

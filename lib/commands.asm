@@ -583,3 +583,47 @@ mkdirCommand:
     rts
 
 // ========================================
+
+rmdirCommand:
+    lda inpBufLen                           // INP_BUF_LEN - 7 = length of parameter to print
+    cmp #7
+    bcc !return+                            // A<7 = no parameter
+    sec
+    sbc #6
+    sta paramLength
+
+    ldx #7                                  // copy start of parameter to source address
+    stx curPosX
+    jsr calcCurPos
+    lda tmpCursor
+    sta sourceAddr
+    lda tmpCursor + 1
+    sta sourceAddr + 1
+                    
+    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    sta destinationAddr
+    lda #>tmpCommandBuffer+3
+    sta destinationAddr + 1
+
+    ldy #0                                  // copy parameter to buffer until a $00 is reached
+!loop:
+    cpy paramLength
+    beq !gotoDir+
+    lda (sourceAddr),Y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+
+!gotoDir:
+    jsr removeDirectory
+    cmp #$FF
+    beq !return+
+
+!printError:
+    lda storageComLastErr
+    jsr printError
+
+!return:
+    rts
+
+// ========================================
