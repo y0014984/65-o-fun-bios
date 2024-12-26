@@ -38,6 +38,7 @@ help: .text @"help\$00"
 ls: .text @"ls\$00"
 mkdir: .text @"mkdir\$00"
 pwd: .text @"pwd\$00"
+rm: .text @"rm\$00"
 rmdir: .text @"rmdir\$00"
 touch: .text @"touch\$00"
 uname: .text @"uname\$00"
@@ -220,12 +221,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp touch,Y
-    bne !clear+
+    bne !rm+
     inx
     iny
     jmp !loop-
 !jsrTouch:
     jsr touchCommand
+    jmp !return+
+
+!rm:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda rm,Y
+    cmp #$00
+    beq !jsrRm+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp rm,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrRm:
+    jsr rmCommand
     jmp !return+
 
 !clear:
@@ -372,6 +391,7 @@ errMissingParam: .text @"Missing parameter\$00"
 errDirExists: .text @"Directory exists\$00"
 errFileExists: .text @"File exists\$00"
 errDirNotEmpty: .text @"Directory not empty\$00"
+errUnknownCommand: .text @"Unknown Command\$00"
 
 errorUnknown: .text @"Unknown error\$00"
 
@@ -390,6 +410,8 @@ printError:
     beq !errFileExists+
     cmp #errCodeDirNotEmpty
     beq !errDirNotEmpty+
+    cmp #errCodeUnknownCom
+    beq !errUnknownCommand+
 
     jmp !errorUnknown+
 
@@ -426,6 +448,11 @@ printError:
 !errDirNotEmpty:
     ldx #<errDirNotEmpty
     ldy #>errDirNotEmpty
+    jmp !printError+
+
+!errUnknownCommand:
+    ldx #<errUnknownCommand
+    ldy #>errUnknownCommand
     jmp !printError+
 
 !errorUnknown:

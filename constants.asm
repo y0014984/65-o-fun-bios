@@ -31,5 +31,6 @@
 .const errCodeDirExists     = $85
 .const errCodeFileExists    = $83
 .const errCodeDirNotEmpty   = $E1
+.const errCodeUnknownCom    = $99
 
 // ========================================
