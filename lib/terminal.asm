@@ -4,6 +4,7 @@
 
 #import "../labels.asm"
 #import "../constants.asm"
+#import "keyboard.asm"
 #import "util.asm"
 #import "commands.asm"
 
@@ -27,9 +28,190 @@ terminalOutputBuffer: .fill screenWidth - 1, $00
 
 // ========================================
 
+welcomeMessageLine1: .text @"*** 65-o-fun v0.1 BIOS ***\$00"
+welcomeMessageLine2: .text @"created by y0014984 (c) 2024\$00"
+welcomeMessageLine3: .text @"type 'help' for command list\$00"
+
+// ========================================
+
+initTerminal:
+    lda #asciiSpace
+    jsr fillScreen
+
+    lda #7                                  // print welcome screen and prompt
+    sta curPosX
+    lda #1
+    sta curPosY
+    ldx #<welcomeMessageLine1
+    ldy #>welcomeMessageLine1
+    jsr printString
+
+    lda #6
+    sta curPosX
+    lda #3
+    sta curPosY
+    ldx #<welcomeMessageLine2
+    ldy #>welcomeMessageLine2
+    jsr printString
+
+    lda #6
+    sta curPosX
+    lda #5
+    sta curPosY
+    ldx #<welcomeMessageLine3
+    ldy #>welcomeMessageLine3
+    jsr printString
+
+    lda #0
+    sta curPosX
+    lda #7
+    sta curPosY
+
+!return:
+    rts
+
+// ========================================
+
+terminalStart:
+    jsr initTerminal
+
+!prompt:
+    jsr resetInpBuf
+    lda #asciiGreaterThan                   // prompt
+    jsr printChar
+    jsr incrCursor
+    lda #asciiCursor                        // unused ASCII code is now Cursor
+    jsr printChar
+    lda #asciiSpace         
+    sta cursorChar
+!terminalLoop:
+    jsr getCharFromBuf
+    cmp #$00
+    beq !terminalLoop-
+    cmp #$08                                // ASCII BACKSPACE
+    beq !backspaceJump+
+    cmp #$0A                                // ASCII LINE FEED
+    beq !enterJump+
+    cmp #$11                                // ASCII DEVICE CONTROL 1 = ARROW LEFT
+    beq !arrowLeftJump+
+    cmp #$12                                // ASCII DEVICE CONTROL 2 = ARROW RIGHT
+    beq !arrowRightJump+
+    jmp !jumpTableEnd+
+!backspaceJump:
+    jmp !backspace+
+!enterJump:
+    jmp !enter+
+!arrowLeftJump:
+    jmp !arrowLeft+
+!arrowRightJump:
+    jmp !arrowRight+
+!jumpTableEnd:
+    ldx curPosX                             // don't leave current input line
+    cpx #screenWidth - 1
+    beq !terminalLoop-
+
+    ldx inpBufCur                           // increment input buffer/cursor
+    cpx inpBufLen
+    bne !noInpBufIncr+
+    inc inpBufLen
+!noInpBufIncr:
+    inc inpBufCur
+
+    jsr printChar
+    jsr incrCursor
+    jsr getCharOnCurPos
+    bne !storeChar+
+    lda #asciiSpace                         // use ASCII SPACE instead of $00/CURSOR to store
+!storeChar:
+    sta cursorChar
+!printCursor:
+    lda #asciiCursor                        // unused ASCII code is now Cursor
+    jsr printChar
+    jmp !terminalLoop-
+!backspace:
+    ldx curPosX                             // don't go beyond prompt
+    cpx #1
+    beq !jmpLoop+
+
+    ldx inpBufCur                           // decrement input buffer/cursor
+    cpx inpBufLen
+    bne !noInpBufDecr+
+    dec inpBufLen
+!noInpBufDecr:
+    dec inpBufCur
+
+    lda cursorChar
+    jsr printChar
+    jsr decrCursor
+    lda #asciiSpace
+    sta cursorChar
+    jsr printChar                           // override current pos with blank to clear cursor
+    jmp !printCursor-
+!jmpLoop:
+    jmp !terminalLoop-
+!enter:
+    jsr processInpBuf
+    jsr newTerminalLine
+!enterContinue:
+    jmp !prompt-
+!arrowLeft:
+    ldx curPosX                             // don't go beyond prompt
+    cpx #1
+    beq !jmpLoop-
+
+    dec inpBufCur                           // decrement input cursor
+
+    lda cursorChar
+    jsr printChar
+    jsr decrCursor
+    jsr getCharOnCurPos
+    sta cursorChar
+    jmp !printCursor-
+!arrowRight:
+    ldx inpBufLen                           // don't leave input buffer
+    inx                                     // + 1 for prompt
+    cpx curPosX
+    beq !jmpLoop-
+
+    ldx inpBufCur                           // increment input cursor
+    cpx inpBufLen
+    beq !noInpCurIncr+
+    inc inpBufCur
+!noInpCurIncr:
+
+    lda cursorChar
+    jsr printChar
+    jsr incrCursor
+    jsr getCharOnCurPos
+    cmp #$00                                // don't exceed beyond already printed chars
+    beq !outsideInputString+                // which is the end of the current input string
+    sta cursorChar
+    jmp !printCursor-
+!outsideInputString:
+    jsr decrCursor
+    jmp !printCursor-
+
+// ========================================
+
+resetInpBuf:
+    lda #0                                  // reset input buffer
+    sta inpBufLen
+    sta inpBufCur
+    ldx #0
+!loop:
+    sta terminalOutputBuffer,x
+    inx
+    cpx #screenWidth - 1
+    bne !loop-
+!return:
+    rts
+
+// ========================================
+
 commandNotFound: .text @"Command not found\$00"
 
 commandList:
+bono: .text @"bono\$00"
 cd: .text @"cd\$00"
 clear: .text @"clear\$00"
 date: .text @"date\$00"
@@ -239,12 +421,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp rm,Y
-    bne !clear+
+    bne !bono+
     inx
     iny
     jmp !loop-
 !jsrRm:
     jsr rmCommand
+    jmp !return+
+
+!bono:
+    ldx #1                              // the current input buffer is in line curPosY after
+    ldy #0                              // the prompt and has the length inpBufLen
+!loop:
+    lda bono,Y
+    cmp #$00
+    beq !jsrBono+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp bono,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrBono:
+    jsr bonoCommand
     jmp !return+
 
 !clear:
@@ -360,14 +560,14 @@ printString:
 // Affects: A
 // Preserves: X, Y
 
-newLine:
+newTerminalLine:
     lda #0                              // new line
     sta curPosX
     inc curPosY
     lda #screenHeight - 1
     cmp curPosY
     bne !return+
-    jsr scrollUp
+    jsr terminalScrollUp
     dec curPosY
 !return:
     rts
@@ -377,7 +577,7 @@ newLine:
 // X and Y contain low byte and high byte of the zero terminated string
 
 printTerminalLine:
-    jsr newLine
+    jsr newTerminalLine
     jsr printString
 !return:
     rts
@@ -549,7 +749,7 @@ decrCursor:
 // Affects: A
 // Preserves: X, Y
 
-scrollUp:
+terminalScrollUp:
     lda #<screenMemStart + screenWidth
     sta sourceAddr
     lda #>screenMemStart + screenWidth

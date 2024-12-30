@@ -5,6 +5,7 @@
 #import "../constants.asm"
 #import "terminal.asm"
 #import "storage.asm"
+#import "editor.asm"
 
 // ========================================
 
@@ -710,6 +711,15 @@ rmCommand:
 !printError:
     lda storageComLastErr
     jsr printError
+
+!return:
+    rts
+
+// ========================================
+
+bonoCommand:
+    jsr editorStart
+    jsr initTerminal
 
 !return:
     rts

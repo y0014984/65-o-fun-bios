@@ -9,10 +9,12 @@
 
 // ========================================
 
+.const asciiLineFeed        = $0A
 .const asciiSpace           = $20
 .const asciiComma           = $2C
 .const asciiGreaterThan     = $3E
 .const asciiCursor          = $81
+.const asciiMiddleDot       = $B7
 
 // ========================================
 

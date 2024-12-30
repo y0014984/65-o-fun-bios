@@ -4,8 +4,7 @@
 
 // ========================================
 
-.label foregroundColor      = $020A
-.label backgroundColor      = $020B
+
 
 .label biosStart            = $D000
 
@@ -26,7 +25,12 @@
 
 // ========================================
 
-.label dateTimeYear         = $020C
+.label foregroundColor      = $020A
+.label backgroundColor      = $020B
+
+// ========================================
+
+.label dateTimeYear         = $020C         // WORD $020C + $020D
 .label dateTimeWeekdayMonth = $020E
 .label dateTimeDay          = $020F
 .label dateTimeHours        = $0210

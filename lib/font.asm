@@ -1,12 +1,28 @@
-// reference: https://upload.wikimedia.org/wikipedia/commons/1/1b/ASCII-Table-wide.svg
+// reference: https://upload.wikimedia.org/wikipedia/commons/1/1b/ASCII-Table-wide.svg// ========================================
 
 // ========================================
 
-.fill $20*8, $00
+.fill $0A*8, $00
 
 // ========================================
 
-spaceCharacter:                 // $20
+LineFeed:                                   // $0A
+.byte %00000000
+.byte %00000110
+.byte %00000110
+.byte %00000110
+.byte %00100110
+.byte %01111110
+.byte %00100000
+.byte %00000000
+
+// ========================================
+
+.fill ($20-$0A-1)*8, $00
+
+// ========================================
+
+spaceCharacter:                             // $20
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -16,7 +32,7 @@ spaceCharacter:                 // $20
 .byte %00000000
 .byte %00000000
 
-exclamationMarkCharacter:       // $21
+exclamationMarkCharacter:                   // $21
 .byte %00011000
 .byte %00011000
 .byte %00011000
@@ -26,7 +42,7 @@ exclamationMarkCharacter:       // $21
 .byte %00011000
 .byte %00000000
 
-quotationMarksCharacter:        // $22
+quotationMarksCharacter:                    // $22
 .byte %01100110
 .byte %01100110
 .byte %01100110
@@ -36,7 +52,7 @@ quotationMarksCharacter:        // $22
 .byte %00000000
 .byte %00000000
 
-numberSignCharacter:            // $23
+numberSignCharacter:                        // $23
 .byte %01100110
 .byte %01100110
 .byte %11111111
@@ -46,7 +62,7 @@ numberSignCharacter:            // $23
 .byte %01100110
 .byte %00000000
 
-dollarSignCharacter:            // $24
+dollarSignCharacter:                        // $24
 .byte %00011000
 .byte %00111110
 .byte %01100000
@@ -56,7 +72,7 @@ dollarSignCharacter:            // $24
 .byte %00011000
 .byte %00000000
 
-percentSignCharacter:           // $25
+percentSignCharacter:                       // $25
 .byte %01100010
 .byte %01100110
 .byte %00001100
@@ -66,7 +82,7 @@ percentSignCharacter:           // $25
 .byte %01000110
 .byte %00000000
 
-ampersandCharacter:             // $26
+ampersandCharacter:                         // $26
 .byte %00111100
 .byte %01100110
 .byte %00111100
@@ -76,7 +92,7 @@ ampersandCharacter:             // $26
 .byte %00111111
 .byte %00000000
 
-apostropheCharacter:            // $27
+apostropheCharacter:                        // $27
 .byte %00000110
 .byte %00001100
 .byte %00011000
@@ -86,7 +102,7 @@ apostropheCharacter:            // $27
 .byte %00000000
 .byte %00000000
 
-parenthesisLeftCharacter:       // $28
+parenthesisLeftCharacter:                   // $28
 .byte %00001100
 .byte %00011000
 .byte %00110000
@@ -96,7 +112,7 @@ parenthesisLeftCharacter:       // $28
 .byte %00001100
 .byte %00000000
 
-parenthesisRightCharacter:      // $29
+parenthesisRightCharacter:                  // $29
 .byte %00110000
 .byte %00011000
 .byte %00001100
@@ -106,7 +122,7 @@ parenthesisRightCharacter:      // $29
 .byte %00110000
 .byte %00000000
 
-asteriskCharacter:              // $2A
+asteriskCharacter:                          // $2A
 .byte %00000000
 .byte %01100110
 .byte %00111100
@@ -116,7 +132,7 @@ asteriskCharacter:              // $2A
 .byte %00000000
 .byte %00000000
 
-plusSignCharacter:              // $2B
+plusSignCharacter:                          // $2B
 .byte %00000000
 .byte %00011000
 .byte %00011000
@@ -126,7 +142,7 @@ plusSignCharacter:              // $2B
 .byte %00000000
 .byte %00000000
 
-commaCharacter:                 // $2C
+commaCharacter:                             // $2C
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -136,7 +152,7 @@ commaCharacter:                 // $2C
 .byte %00011000
 .byte %00110000
 
-minusSignCharacter:             // $2D
+minusSignCharacter:                         // $2D
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -146,7 +162,7 @@ minusSignCharacter:             // $2D
 .byte %00000000
 .byte %00000000
 
-fullStopCharacter:              // $2E
+fullStopCharacter:                          // $2E
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -156,7 +172,7 @@ fullStopCharacter:              // $2E
 .byte %00011000
 .byte %00000000
 
-slashCharacter:                 // $2F
+slashCharacter:                             // $2F
 .byte %00000000
 .byte %00000011
 .byte %00000110
@@ -168,7 +184,7 @@ slashCharacter:                 // $2F
 
 // ========================================
 
-zeroCharacter:                  // $30
+zeroCharacter:                              // $30
 .byte %00111100
 .byte %01100110
 .byte %01101110
@@ -178,7 +194,7 @@ zeroCharacter:                  // $30
 .byte %00111100
 .byte %00000000
 
-oneCharacter:                   // $31
+oneCharacter:                               // $31
 .byte %00011000
 .byte %00011000
 .byte %00111000
@@ -188,7 +204,7 @@ oneCharacter:                   // $31
 .byte %01111110
 .byte %00000000
 
-twoCharacter:                   // $32
+twoCharacter:                               // $32
 .byte %00111100
 .byte %01100110
 .byte %00000110
@@ -198,7 +214,7 @@ twoCharacter:                   // $32
 .byte %01111110
 .byte %00000000
 
-threeCharacter:                 // $33
+threeCharacter:                             // $33
 .byte %00111100
 .byte %01100110
 .byte %00000110
@@ -208,7 +224,7 @@ threeCharacter:                 // $33
 .byte %00111100
 .byte %00000000
 
-fourCharacter:                  // $34
+fourCharacter:                              // $34
 .byte %00000110
 .byte %00001110
 .byte %00011110
@@ -218,7 +234,7 @@ fourCharacter:                  // $34
 .byte %00000110
 .byte %00000000
 
-fiveCharacter:                  // $35
+fiveCharacter:                              // $35
 .byte %01111110
 .byte %01100000
 .byte %01111100
@@ -228,7 +244,7 @@ fiveCharacter:                  // $35
 .byte %00111100
 .byte %00000000
 
-sixCharacter:                   // $36
+sixCharacter:                               // $36
 .byte %00111100
 .byte %01100110
 .byte %01100000
@@ -238,7 +254,7 @@ sixCharacter:                   // $36
 .byte %00111100
 .byte %00000000
 
-sevenCharacter:                 // $37
+sevenCharacter:                             // $37
 .byte %01111110
 .byte %01100110
 .byte %00001100
@@ -248,7 +264,7 @@ sevenCharacter:                 // $37
 .byte %00011000
 .byte %00000000
 
-eightCharacter:                 // $38
+eightCharacter:                             // $38
 .byte %00111100
 .byte %01100110
 .byte %01100110
@@ -258,7 +274,7 @@ eightCharacter:                 // $38
 .byte %00111100
 .byte %00000000
 
-nineCharacter:                  // $39
+nineCharacter:                              // $39
 .byte %00111100
 .byte %01100110
 .byte %01100110
@@ -268,7 +284,7 @@ nineCharacter:                  // $39
 .byte %00111100
 .byte %00000000
 
-colonCharacter:                 // $3A
+colonCharacter:                             // $3A
 .byte %00000000
 .byte %00000000
 .byte %00011000
@@ -278,7 +294,7 @@ colonCharacter:                 // $3A
 .byte %00000000
 .byte %00000000
 
-semicolonCharacter:             // $3B
+semicolonCharacter:                         // $3B
 .byte %00000000
 .byte %00000000
 .byte %00011000
@@ -288,7 +304,7 @@ semicolonCharacter:             // $3B
 .byte %00011000
 .byte %00110000
 
-lessThanSignCharacter:          // $3C
+lessThanSignCharacter:                      // $3C
 .byte %00001110
 .byte %00011000
 .byte %00110000
@@ -298,7 +314,7 @@ lessThanSignCharacter:          // $3C
 .byte %00001110
 .byte %00000000
 
-equalsSignCharacter:            // $3D
+equalsSignCharacter:                        // $3D
 .byte %00000000
 .byte %00000000
 .byte %01111110
@@ -308,7 +324,7 @@ equalsSignCharacter:            // $3D
 .byte %00000000
 .byte %00000000
 
-greaterThanSignCharacter:       // $3E
+greaterThanSignCharacter:                   // $3E
 .byte %01110000
 .byte %00011000
 .byte %00001100
@@ -318,7 +334,7 @@ greaterThanSignCharacter:       // $3E
 .byte %01110000
 .byte %00000000
 
-questionMarkCharacter:          // $3F
+questionMarkCharacter:                      // $3F
 .byte %00111100
 .byte %01100110
 .byte %00000110
@@ -330,7 +346,7 @@ questionMarkCharacter:          // $3F
 
 // ========================================
 
-atSignCharacter:                // $40
+atSignCharacter:                            // $40
 .byte %00111100
 .byte %01100110
 .byte %01101110
@@ -340,7 +356,7 @@ atSignCharacter:                // $40
 .byte %00111100
 .byte %00000000
 
-upperCaseACharacter:            // $41
+upperCaseACharacter:                        // $41
 .byte %00011000
 .byte %00111100
 .byte %01100110
@@ -350,7 +366,7 @@ upperCaseACharacter:            // $41
 .byte %01100110
 .byte %00000000
 
-upperCaseBCharacter:            // $42
+upperCaseBCharacter:                        // $42
 .byte %01111100
 .byte %01100110
 .byte %01100110
@@ -360,7 +376,7 @@ upperCaseBCharacter:            // $42
 .byte %01111100
 .byte %00000000
 
-upperCaseCCharacter:            // $43
+upperCaseCCharacter:                        // $43
 .byte %00111100
 .byte %01100110
 .byte %01100000
@@ -370,7 +386,7 @@ upperCaseCCharacter:            // $43
 .byte %00111100
 .byte %00000000
 
-upperCaseDCharacter:            // $44
+upperCaseDCharacter:                        // $44
 .byte %01111000
 .byte %01101100
 .byte %01100110
@@ -380,7 +396,7 @@ upperCaseDCharacter:            // $44
 .byte %01111000
 .byte %00000000
 
-upperCaseECharacter:            // $45
+upperCaseECharacter:                        // $45
 .byte %01111110
 .byte %01100000
 .byte %01100000
@@ -390,7 +406,7 @@ upperCaseECharacter:            // $45
 .byte %01111110
 .byte %00000000
 
-upperCaseFCharacter:            // $46
+upperCaseFCharacter:                        // $46
 .byte %01111110
 .byte %01100000
 .byte %01100000
@@ -400,7 +416,7 @@ upperCaseFCharacter:            // $46
 .byte %01100000
 .byte %00000000
 
-upperCaseGCharacter:            // $47
+upperCaseGCharacter:                        // $47
 .byte %00111100
 .byte %01100110
 .byte %01100000
@@ -410,7 +426,7 @@ upperCaseGCharacter:            // $47
 .byte %00111100
 .byte %00000000
 
-upperCaseHCharacter:            // $$8
+upperCaseHCharacter:                        // $$8
 .byte %01100110
 .byte %01100110
 .byte %01100110
@@ -420,7 +436,7 @@ upperCaseHCharacter:            // $$8
 .byte %01100110
 .byte %00000000
 
-upperCaseICharacter:            // $49
+upperCaseICharacter:                        // $49
 .byte %00111100
 .byte %00011000
 .byte %00011000
@@ -430,7 +446,7 @@ upperCaseICharacter:            // $49
 .byte %00111100
 .byte %00000000
 
-upperCaseJCharacter:            // $4A
+upperCaseJCharacter:                        // $4A
 .byte %00011110
 .byte %00001100
 .byte %00001100
@@ -440,7 +456,7 @@ upperCaseJCharacter:            // $4A
 .byte %00111000
 .byte %00000000
 
-upperCaseKCharacter:            // $4B
+upperCaseKCharacter:                        // $4B
 .byte %01100110
 .byte %01101100
 .byte %01111000
@@ -450,7 +466,7 @@ upperCaseKCharacter:            // $4B
 .byte %01100110
 .byte %00000000
 
-upperCaseLCharacter:            // $4C
+upperCaseLCharacter:                        // $4C
 .byte %01100000
 .byte %01100000
 .byte %01100000
@@ -460,7 +476,7 @@ upperCaseLCharacter:            // $4C
 .byte %01111110
 .byte %00000000
 
-upperCaseMCharacter:            // $4D
+upperCaseMCharacter:                        // $4D
 .byte %01100011
 .byte %01110111
 .byte %01111111
@@ -470,7 +486,7 @@ upperCaseMCharacter:            // $4D
 .byte %01100011
 .byte %00000000
 
-upperCaseNCharacter:            // $4E
+upperCaseNCharacter:                        // $4E
 .byte %01100110
 .byte %01110110
 .byte %01111110
@@ -480,7 +496,7 @@ upperCaseNCharacter:            // $4E
 .byte %01100110
 .byte %00000000
 
-upperCaseOCharacter:            // $4F
+upperCaseOCharacter:                        // $4F
 .byte %00111100
 .byte %01100110
 .byte %01100110
@@ -492,7 +508,7 @@ upperCaseOCharacter:            // $4F
 
 // ========================================
 
-upperCasePCharacter:            // $50
+upperCasePCharacter:                        // $50
 .byte %01111100
 .byte %01100110
 .byte %01100110
@@ -502,7 +518,7 @@ upperCasePCharacter:            // $50
 .byte %01100000
 .byte %00000000
 
-upperCaseQCharacter:            // $51
+upperCaseQCharacter:                        // $51
 .byte %00111100
 .byte %01100110
 .byte %01100110
@@ -512,7 +528,7 @@ upperCaseQCharacter:            // $51
 .byte %00001110
 .byte %00000000
 
-upperCaseRCharacter:            // $52
+upperCaseRCharacter:                        // $52
 .byte %01111100
 .byte %01100110
 .byte %01100110
@@ -522,7 +538,7 @@ upperCaseRCharacter:            // $52
 .byte %01100110
 .byte %00000000
 
-upperCaseSCharacter:            // $53
+upperCaseSCharacter:                        // $53
 .byte %00111100
 .byte %01100110
 .byte %01100000
@@ -532,7 +548,7 @@ upperCaseSCharacter:            // $53
 .byte %00111100
 .byte %00000000
 
-upperCaseTCharacter:            // $54
+upperCaseTCharacter:                        // $54
 .byte %01111110
 .byte %00011000
 .byte %00011000
@@ -542,7 +558,7 @@ upperCaseTCharacter:            // $54
 .byte %00011000
 .byte %00000000
 
-upperCaseUCharacter:            // $55
+upperCaseUCharacter:                        // $55
 .byte %01100110
 .byte %01100110
 .byte %01100110
@@ -552,7 +568,7 @@ upperCaseUCharacter:            // $55
 .byte %00111100
 .byte %00000000
 
-upperCaseVCharacter:            // $56
+upperCaseVCharacter:                        // $56
 .byte %01100110
 .byte %01100110
 .byte %01100110
@@ -562,7 +578,7 @@ upperCaseVCharacter:            // $56
 .byte %00011000
 .byte %00000000
 
-upperCaseWCharacter:            // $57
+upperCaseWCharacter:                        // $57
 .byte %01100011
 .byte %01100011
 .byte %01100011
@@ -572,7 +588,7 @@ upperCaseWCharacter:            // $57
 .byte %01100011
 .byte %00000000
 
-upperCaseXCharacter:            // $58
+upperCaseXCharacter:                        // $58
 .byte %01100110
 .byte %01100110
 .byte %00111100
@@ -582,7 +598,7 @@ upperCaseXCharacter:            // $58
 .byte %01100110
 .byte %00000000
 
-upperCaseYCharacter:            // $59
+upperCaseYCharacter:                        // $59
 .byte %01100110
 .byte %01100110
 .byte %01100110
@@ -592,7 +608,7 @@ upperCaseYCharacter:            // $59
 .byte %00011000
 .byte %00000000
 
-upperCaseZCharacter:            // $5A
+upperCaseZCharacter:                        // $5A
 .byte %01111110
 .byte %00000110
 .byte %00001100
@@ -602,7 +618,7 @@ upperCaseZCharacter:            // $5A
 .byte %01111110
 .byte %00000000
 
-bracketLeftCharacter:           // $5B
+bracketLeftCharacter:                       // $5B
 .byte %00111100
 .byte %00110000
 .byte %00110000
@@ -612,7 +628,7 @@ bracketLeftCharacter:           // $5B
 .byte %00111100
 .byte %00000000
 
-backslashCharacter:             // $5C
+backslashCharacter:                         // $5C
 .byte %00000000
 .byte %01100000
 .byte %00110000
@@ -622,7 +638,7 @@ backslashCharacter:             // $5C
 .byte %00000011
 .byte %00000000
 
-bracketRightCharacter:          // $5D
+bracketRightCharacter:                      // $5D
 .byte %00111100
 .byte %00001100
 .byte %00001100
@@ -632,7 +648,7 @@ bracketRightCharacter:          // $5D
 .byte %00111100
 .byte %00000000
 
-circumflexCharacter:            // $5E
+circumflexCharacter:                        // $5E
 .byte %00011000
 .byte %00111100
 .byte %01100110
@@ -642,7 +658,7 @@ circumflexCharacter:            // $5E
 .byte %00000000
 .byte %00000000
 
-underscoreCharacter:            // $5F
+underscoreCharacter:                        // $5F
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -654,7 +670,7 @@ underscoreCharacter:            // $5F
 
 // ========================================
 
-graveCharacter:                 // $60
+graveCharacter:                             // $60
 .byte %01100000
 .byte %00110000
 .byte %00011000
@@ -664,7 +680,7 @@ graveCharacter:                 // $60
 .byte %00000000
 .byte %00000000
 
-lowerCaseACharacter:            // $61
+lowerCaseACharacter:                        // $61
 .byte %00000000
 .byte %00000000
 .byte %00111100
@@ -674,7 +690,7 @@ lowerCaseACharacter:            // $61
 .byte %00111110
 .byte %00000000
 
-lowerCaseBCharacter:            // $62
+lowerCaseBCharacter:                        // $62
 .byte %00000000
 .byte %01100000
 .byte %01100000
@@ -684,7 +700,7 @@ lowerCaseBCharacter:            // $62
 .byte %01111100
 .byte %00000000
 
-lowerCaseCCharacter:            // $63
+lowerCaseCCharacter:                        // $63
 .byte %00000000
 .byte %00000000
 .byte %00111100
@@ -694,7 +710,7 @@ lowerCaseCCharacter:            // $63
 .byte %00111100
 .byte %00000000
 
-lowerCaseDCharacter:            // $64
+lowerCaseDCharacter:                        // $64
 .byte %00000000
 .byte %00000110
 .byte %00000110
@@ -704,7 +720,7 @@ lowerCaseDCharacter:            // $64
 .byte %00111110
 .byte %00000000
 
-lowerCaseECharacter:            // $65
+lowerCaseECharacter:                        // $65
 .byte %00000000
 .byte %00000000
 .byte %00111100
@@ -714,7 +730,7 @@ lowerCaseECharacter:            // $65
 .byte %00111100
 .byte %00000000
 
-lowerCaseFCharacter:            // $66
+lowerCaseFCharacter:                        // $66
 .byte %00000000
 .byte %00001110
 .byte %00011000
@@ -724,7 +740,7 @@ lowerCaseFCharacter:            // $66
 .byte %00011000
 .byte %00000000
 
-lowerCaseGCharacter:            // $67
+lowerCaseGCharacter:                        // $67
 .byte %00000000
 .byte %00000000
 .byte %00111110
@@ -734,7 +750,7 @@ lowerCaseGCharacter:            // $67
 .byte %00000110
 .byte %01111100
 
-lowerCaseHCharacter:            // $68
+lowerCaseHCharacter:                        // $68
 .byte %00000000
 .byte %01100000
 .byte %01100000
@@ -744,7 +760,7 @@ lowerCaseHCharacter:            // $68
 .byte %01100110
 .byte %00000000
 
-lowerCaseICharacter:            // $69
+lowerCaseICharacter:                        // $69
 .byte %00000000
 .byte %00011000
 .byte %00000000
@@ -754,7 +770,7 @@ lowerCaseICharacter:            // $69
 .byte %00111100
 .byte %00000000
 
-lowerCaseJCharacter:            // $6A
+lowerCaseJCharacter:                        // $6A
 .byte %00000000
 .byte %00000110
 .byte %00000000
@@ -764,7 +780,7 @@ lowerCaseJCharacter:            // $6A
 .byte %00000110
 .byte %00111100
 
-lowerCaseKCharacter:            // $6B
+lowerCaseKCharacter:                        // $6B
 .byte %00000000
 .byte %01100000
 .byte %01100000
@@ -774,7 +790,7 @@ lowerCaseKCharacter:            // $6B
 .byte %01100110
 .byte %00000000
 
-lowerCaseLCharacter:            // $6C
+lowerCaseLCharacter:                        // $6C
 .byte %00000000
 .byte %00111000
 .byte %00011000
@@ -784,7 +800,7 @@ lowerCaseLCharacter:            // $6C
 .byte %00111100
 .byte %00000000
 
-lowerCaseMCharacter:            // $6D
+lowerCaseMCharacter:                        // $6D
 .byte %00000000
 .byte %00000000
 .byte %01100110
@@ -794,7 +810,7 @@ lowerCaseMCharacter:            // $6D
 .byte %01100011
 .byte %00000000
 
-lowerCaseNCharacter:            // $6E
+lowerCaseNCharacter:                        // $6E
 .byte %00000000
 .byte %00000000
 .byte %01111100
@@ -804,7 +820,7 @@ lowerCaseNCharacter:            // $6E
 .byte %01100110
 .byte %00000000
 
-lowerCaseOCharacter:            // $6F
+lowerCaseOCharacter:                        // $6F
 .byte %00000000
 .byte %00000000
 .byte %00111100
@@ -816,7 +832,7 @@ lowerCaseOCharacter:            // $6F
 
 // ========================================
 
-lowerCasePCharacter:            // $70
+lowerCasePCharacter:                        // $70
 .byte %00000000
 .byte %00000000
 .byte %01111100
@@ -826,7 +842,7 @@ lowerCasePCharacter:            // $70
 .byte %01100000
 .byte %01100000
 
-lowerCaseQCharacter:            // $71
+lowerCaseQCharacter:                        // $71
 .byte %00000000
 .byte %00000000
 .byte %00111110
@@ -836,7 +852,7 @@ lowerCaseQCharacter:            // $71
 .byte %00000110
 .byte %00000110
 
-lowerCaseRCharacter:            // $72
+lowerCaseRCharacter:                        // $72
 .byte %00000000
 .byte %00000000
 .byte %01111100
@@ -846,7 +862,7 @@ lowerCaseRCharacter:            // $72
 .byte %01100000
 .byte %00000000
 
-lowerCaseSCharacter:            // $73
+lowerCaseSCharacter:                        // $73
 .byte %00000000
 .byte %00000000
 .byte %00111110
@@ -856,7 +872,7 @@ lowerCaseSCharacter:            // $73
 .byte %01111100
 .byte %00000000
 
-lowerCaseTCharacter:            // $74
+lowerCaseTCharacter:                        // $74
 .byte %00000000
 .byte %00011000
 .byte %01111110
@@ -866,7 +882,7 @@ lowerCaseTCharacter:            // $74
 .byte %00001110
 .byte %00000000
 
-lowerCaseUCharacter:            // $75
+lowerCaseUCharacter:                        // $75
 .byte %00000000
 .byte %00000000
 .byte %01100110
@@ -876,7 +892,7 @@ lowerCaseUCharacter:            // $75
 .byte %00111110
 .byte %00000000
 
-lowerCaseVCharacter:            // $76
+lowerCaseVCharacter:                        // $76
 .byte %00000000
 .byte %00000000
 .byte %01100110
@@ -886,7 +902,7 @@ lowerCaseVCharacter:            // $76
 .byte %00011000
 .byte %00000000
 
-lowerCaseWCharacter:            // $77
+lowerCaseWCharacter:                        // $77
 .byte %00000000
 .byte %00000000
 .byte %01100011
@@ -896,7 +912,7 @@ lowerCaseWCharacter:            // $77
 .byte %00110110
 .byte %00000000
 
-lowerCaseXCharacter:            // $78
+lowerCaseXCharacter:                        // $78
 .byte %00000000
 .byte %00000000
 .byte %01100110
@@ -906,7 +922,7 @@ lowerCaseXCharacter:            // $78
 .byte %01100110
 .byte %00000000
 
-lowerCaseYCharacter:            // $79
+lowerCaseYCharacter:                        // $79
 .byte %00000000
 .byte %00000000
 .byte %01100110
@@ -916,7 +932,7 @@ lowerCaseYCharacter:            // $79
 .byte %00001100
 .byte %01111000
 
-lowerCaseZCharacter:            // $7A
+lowerCaseZCharacter:                        // $7A
 .byte %00000000
 .byte %00000000
 .byte %01111110
@@ -926,7 +942,7 @@ lowerCaseZCharacter:            // $7A
 .byte %01111110
 .byte %00000000
 
-braceLeftCharacter:             // $7B
+braceLeftCharacter:                         // $7B
 .byte %00011000
 .byte %00110000
 .byte %00110000
@@ -936,7 +952,7 @@ braceLeftCharacter:             // $7B
 .byte %00011000
 .byte %00000000
 
-pipeCharacter:                  // $7C
+pipeCharacter:                              // $7C
 .byte %00011000
 .byte %00011000
 .byte %00011000
@@ -946,7 +962,7 @@ pipeCharacter:                  // $7C
 .byte %00011000
 .byte %00000000
 
-braceRightCharacter:            // $7D
+braceRightCharacter:                        // $7D
 .byte %00011000
 .byte %00001100
 .byte %00001100
@@ -956,7 +972,7 @@ braceRightCharacter:            // $7D
 .byte %00011000
 .byte %00000000
 
-tildeCharacter:                 // $7E
+tildeCharacter:                             // $7E
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -972,7 +988,7 @@ tildeCharacter:                 // $7E
 
 // ========================================
 
-cursorCharacter:                // $81
+cursorCharacter:                            // $81
 .byte %11111111
 .byte %11111111
 .byte %11111111
@@ -984,6 +1000,22 @@ cursorCharacter:                // $81
 
 // ========================================
 
-.fill ($FF-$81)*8, $00
+.fill ($B7-$81-1)*8, $00
+
+// ========================================
+
+middleDotCharacter:                         // $B7
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00011000
+.byte %00011000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+
+// ========================================
+
+.fill ($FF-$B7)*8, $00
 
 // ========================================
