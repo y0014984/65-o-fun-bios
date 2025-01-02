@@ -14,17 +14,20 @@ footer2: .text @"~^X~Exit  ~^R~Read File  ~^U~Paste\$00"
 
 // ========================================
 
-.const startHeader          = screenMemStart
-.const startFooter1         = screenMemStart+(screenWidth*(screenHeight-2))
-.const startFooter2         = screenMemStart+(screenWidth*(screenHeight-1))
+.const editorStartHeader    = screenMemStart
+.const editorStartFooter1   = screenMemStart+(screenWidth*(screenHeight-2))
+.const editorStartFooter2   = screenMemStart+(screenWidth*(screenHeight-1))
 .const editorHeaderHeight   = 2
 .const editorFooterHeight   = 3
 .const editorLineNumbers    = 3
 .const editorLineNumberGap  = 1
+.const editorStatLineIndex  = 27
 .const editorStartX         = editorLineNumbers+editorLineNumberGap
 .const editorStartY         = editorHeaderHeight
 .const editorHeight         = screenHeight-editorHeaderHeight-editorFooterHeight
 .const editorWidth          = screenWidth-editorStartX
+.const editorStartStatLine  = screenMemStart+(screenWidth*editorStatLineIndex)
+.const editorFilenameOffset = 15
 
 // ========================================
 
@@ -117,13 +120,11 @@ editorStart:
 test: .byte $40
 
 !ctrlO:
-    inc test
-    lda test
-    sta $0400
+    jsr commandCtrlO
     jmp !editorLoop-
 
 !printCursor:
-    lda #charFullBlock                        // unused ASCII code is now Cursor
+    lda #charFullBlock                      // unused ASCII code is now Cursor
     jsr printChar
     jmp !editorLoop-
 
@@ -133,6 +134,7 @@ test: .byte $40
     jsr editorPrintableChar
     jsr getCharOnCurPos
     sta cursorChar
+    jsr showEditMarker
     jmp !printCursor-
 !backspace:
     lda cursorChar
@@ -140,6 +142,7 @@ test: .byte $40
     jsr editorBackspace
     jsr getCharOnCurPos
     sta cursorChar
+    jsr showEditMarker
     jmp !printCursor-
 !enter:
     lda cursorChar
@@ -147,6 +150,7 @@ test: .byte $40
     jsr editorEnter
     jsr getCharOnCurPos
     sta cursorChar
+    jsr showEditMarker
     jmp !printCursor-
 !arrowLeft:
     lda cursorChar
@@ -176,6 +180,338 @@ test: .byte $40
     jsr getCharOnCurPos
     sta cursorChar
     jmp !printCursor-
+
+// ========================================
+
+saveLinesCounter: .byte $00
+
+commandCtrlO:
+    lda curPosX
+    pha
+    lda curPosY
+    pha
+
+    jsr askFilename
+    lda inpBufLen
+    cmp #0
+    beq !noFilename+
+
+    jsr copyFilenameToCommandBuffer
+    jsr existsFilesystemObject
+    cmp #$FF
+    beq !fsObjectExists+
+    jmp !saveNewFile+
+
+!fsObjectExists:
+    jsr copyFilenameToCommandBuffer
+    jsr isFile
+    cmp #$FF
+    beq !fileExists+
+    lda #errCodeIsDir
+    jsr editorPrintError
+    jmp !return+
+
+!fileExists:
+    lda #errCodeFileExists
+    jsr editorPrintError
+    jmp !return+
+
+!printError:
+    lda storageComLastErr
+    jsr editorPrintError
+    jmp !return+
+
+!saveNewFile:
+    jsr copyFilenameToCommandBuffer
+    jsr createFile
+    cmp #$FF
+    bne !printError-
+
+    lda #0
+    sta saveLinesCounter
+!loop:
+    ldx saveLinesCounter
+    lda lineLengthCache,x
+    cmp #$00
+    beq !finished+
+    jsr copyFilenameToCommandBuffer
+    jsr copyLineToReadWriteBuffer
+    jsr appendFileContent
+    cmp #$FF
+    bne !printError-
+    inc saveLinesCounter
+    lda saveLinesCounter
+    cmp editorHeight
+    beq !finished+
+    jmp !loop-
+
+!finished:
+    jsr updateFilename
+    jsr printXxxLinesWritten
+    jsr clearEditMarker
+
+!noFilename:
+!return:
+    pla
+    sta curPosY
+    pla
+    sta curPosX
+    rts
+
+// ========================================
+
+editorPrintError:
+    jsr invertColors
+    jsr clearStatLine
+
+    ldx #5
+    stx curPosX
+    ldy #editorStatLineIndex
+    sty curPosY
+
+    cmp #errCodeFileExists
+    beq !errFileExists+
+    cmp #errCodeIsDir
+    beq !errIsDir+
+
+    jmp !errorUnknown+
+
+!errFileExists:
+    ldx #<errFileExists
+    ldy #>errFileExists
+    jmp !printError+
+
+!errIsDir:
+    ldx #<errIsDir
+    ldy #>errIsDir
+    jmp !printError+
+
+!errorUnknown:
+    ldx #<errorUnknown
+    ldy #>errorUnknown
+
+!printError:
+    jsr printString
+
+!return:
+    jsr invertColors
+    rts
+
+// ========================================
+
+copyFilenameToCommandBuffer:
+    lda #15
+    sta curPosX
+    jsr calcCurPos
+    lda tmpCursor
+    sta sourceAddr
+    lda tmpCursor + 1
+    sta sourceAddr + 1
+                    
+    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    sta destinationAddr
+    lda #>tmpCommandBuffer+3
+    sta destinationAddr + 1
+
+    ldy #0                                  // copy filename to buffer
+!loop:
+    cpy inpBufLen
+    beq !loopEnd+
+    lda (sourceAddr),Y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+!loopEnd:
+
+!return:
+    rts
+
+// ========================================
+
+updateFilename:
+    jsr invertColors
+
+    lda #charSpace
+    ldx #0                                  // clear filename
+!loop:
+    cpx #screenWidth-editorFilenameOffset
+    beq !loopEnd+
+    sta editorStartHeader+editorFilenameOffset,x
+    inx
+    jmp !loop-
+!loopEnd:
+
+    lda #15
+    sta curPosX
+    jsr calcCurPos
+    lda tmpCursor
+    sta sourceAddr
+    lda tmpCursor + 1
+    sta sourceAddr + 1
+                    
+    lda #<editorStartHeader+editorFilenameOffset    // copy header+editorFilenameOffset to destination address
+    sta destinationAddr
+    lda #>editorStartHeader+editorFilenameOffset
+    sta destinationAddr + 1
+
+    ldy #0                                  // copy filename to header
+!loop:
+    cpy inpBufLen
+    beq !loopEnd+
+    lda (sourceAddr),Y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+!loopEnd:
+
+!return:
+    jsr invertColors
+    rts
+
+// ========================================
+
+copyLineToReadWriteBuffer:
+    jsr clearReadWriteBuffer
+
+    ldx saveLinesCounter
+    lda lineLengthCache,x
+    sta tmpReadWriteBuffer
+
+    lda #<editorCache
+    sta sourceAddr
+    lda #>editorCache + 1
+    sta sourceAddr + 1
+
+    ldx #0
+!loop:
+    cpx saveLinesCounter
+    beq !endLoop+
+    lda sourceAddr
+    clc
+    adc #editorWidth
+    sta sourceAddr
+    lda sourceAddr+1
+    adc #0
+    sta sourceAddr+1
+    inx
+    jmp !loop-
+!endLoop:
+                    
+    lda #<tmpReadWriteBuffer+1              // copy R/W buffer to destination address + 1
+    sta destinationAddr
+    lda #>tmpReadWriteBuffer+1
+    sta destinationAddr + 1
+
+    ldy #0                                  // copy line to buffer
+!loop:
+    cpy tmpReadWriteBuffer                  // tmpReadWriteBuffer now stores the line length
+    beq !loopEnd+
+    lda (sourceAddr),Y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+!loopEnd:
+
+!return:
+    rts
+
+// ========================================
+
+filename: .text @"Filename:\$00"
+
+askFilename:
+    jsr invertColors
+    jsr clearStatLine
+
+    lda #5                                  // print question
+    sta curPosX
+    lda #editorStatLineIndex
+    sta curPosY
+    
+    ldx #<filename
+    ldy #>filename
+    jsr printString
+
+    lda #15
+    sta curPosX
+    jsr getString
+!return:
+    jsr invertColors
+    rts
+
+// ========================================
+
+xxxLinesWritten: .text @"[XXX lines written]\$00"
+
+printXxxLinesWritten:
+    jsr invertColors
+    jsr clearStatLine
+
+    lda #5                                  // print sentence
+    sta curPosX
+    lda #editorStatLineIndex
+    sta curPosY
+    
+    ldx #<xxxLinesWritten
+    ldy #>xxxLinesWritten
+    jsr printString
+
+    lda saveLinesCounter
+    jsr print8
+
+    ldx #6
+!number:
+    lda num8Digits+0
+    sta editorStartStatLine+0,x
+    lda num8Digits+1
+    sta editorStartStatLine+1,x
+    lda num8Digits+2
+    sta editorStartStatLine+2,x
+
+!return:
+    jsr invertColors
+    rts
+
+// ========================================
+
+clearStatLine:
+    pha
+
+    lda #charSpace
+    ldx #0
+
+!loop:
+    sta editorStartStatLine,x
+    inx
+    cpx #screenWidth
+    beq !return+
+    jmp !loop-
+
+!return:
+    pla
+    rts
+
+// ========================================
+
+showEditMarker:
+    jsr invertColors
+    lda #charAsterisk
+    ldx #14
+    sta screenMemStart,x
+    jsr invertColors
+!return:
+    rts
+
+// ========================================
+
+clearEditMarker:
+    jsr invertColors
+    lda #charSpace
+    ldx #14
+    sta screenMemStart,x
+    jsr invertColors
+!return:
+    rts
 
 // ========================================
 
@@ -224,9 +560,17 @@ editorBackspace:
 // ========================================
 
 editorEnter:
-    lda #charPilcrowSign                      // print line feed symbol as end of line
+    ldx curPosX                             // don't leave screen
+    cpx #screenWidth - 1
+    beq !return+
+
+    lda #charPilcrowSign                    // print line feed symbol as end of line
     jsr printChar
     jsr storeCharInCache
+    inc currentLineCur
+    lda currentLineCur
+    ldx currentLine
+    sta lineLengthCache,x
 
     lda #editorStartX                       // new line
     sta curPosX
@@ -421,7 +765,7 @@ printHeader:
 !loop:
     cpx #screenWidth
     beq !printHeader+
-    sta startHeader,x
+    sta editorStartHeader,x
     inx
     jmp !loop-
 
@@ -431,7 +775,7 @@ printHeader:
     lda header,x
     cmp #$00
     beq !return+
-    sta startHeader,x
+    sta editorStartHeader,x
     inx
     jmp !loop-
 
@@ -455,9 +799,9 @@ printFooter:
 !dontInvertColors:
     cmp #$00
     beq !return+
-    sta startFooter1,x
+    sta editorStartFooter1,x
     lda footer2,x
-    sta startFooter2,x
+    sta editorStartFooter2,x
     inx
     jmp !loop-
 !return:

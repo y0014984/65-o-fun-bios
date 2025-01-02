@@ -11,6 +11,7 @@
 
 .const charPilcrowSign      = $14           // used as line break symbol in 'bono'
 .const charSpace            = $20
+.const charAsterisk         = $2A
 .const charComma            = $2C
 .const charGreaterThan      = $3E           // used as prompt in 'bono'
 .const charFullBlock        = $DB           // used as cursor in terminal and 'bono'

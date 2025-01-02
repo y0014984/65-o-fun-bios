@@ -228,13 +228,91 @@ removeFile:
 // ========================================
 
 getWorkingDirectory:
-    jsr clearReadWriteBuffer
-
     lda #'G'
     sta tmpCommandBuffer
     lda #'W'
     sta tmpCommandBuffer+1
     lda #'D'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
+existsFilesystemObject:
+    lda #'E'
+    sta tmpCommandBuffer
+    lda #'F'
+    sta tmpCommandBuffer+1
+    lda #'O'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
+isFile:
+    lda #'I'
+    sta tmpCommandBuffer
+    lda #'S'
+    sta tmpCommandBuffer+1
+    lda #'F'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
+saveFileContent:
+    lda #'S'
+    sta tmpCommandBuffer
+    lda #'F'
+    sta tmpCommandBuffer+1
+    lda #'C'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
+appendFileContent:
+    lda #'A'
+    sta tmpCommandBuffer
+    lda #'F'
+    sta tmpCommandBuffer+1
+    lda #'C'
     sta tmpCommandBuffer+2
 
     lda #commandFlowReady

@@ -75,19 +75,33 @@ initTerminal:
 terminalStart:
     jsr initTerminal
 
-!prompt:
-    jsr resetInpBuf
+!loop:
     lda #charGreaterThan                   // prompt
     jsr printChar
     jsr incrCursor
-    lda #charFullBlock                        // unused ASCII code is now Cursor
+
+    jsr getString
+    jsr processInpBuf
+    jsr newTerminalLine
+    jmp !loop-
+
+// ========================================
+
+getStringStart: .byte $00
+
+getString:
+    lda curPosX
+    sta getStringStart
+
+    jsr resetInpBuf
+    lda #charFullBlock                     // unused ASCII code is now Cursor
     jsr printChar
     lda #charSpace         
     sta cursorChar
-!terminalLoop:
+!getStringLoop:
     jsr getCharFromBuf
     cmp #$00
-    beq !terminalLoop-
+    beq !getStringLoop-
     cmp #$08                                // ASCII BACKSPACE
     beq !backspaceJump+
     cmp #$0A                                // ASCII LINE FEED
@@ -108,7 +122,7 @@ terminalStart:
 !jumpTableEnd:
     ldx curPosX                             // don't leave current input line
     cpx #screenWidth - 1
-    beq !terminalLoop-
+    beq !getStringLoop-
 
     ldx inpBufCur                           // increment input buffer/cursor
     cpx inpBufLen
@@ -121,16 +135,16 @@ terminalStart:
     jsr incrCursor
     jsr getCharOnCurPos
     bne !storeChar+
-    lda #charSpace                         // use ASCII SPACE instead of $00/CURSOR to store
+    lda #charSpace                          // use ASCII SPACE instead of $00/CURSOR to store
 !storeChar:
     sta cursorChar
 !printCursor:
-    lda #charFullBlock                        // unused ASCII code is now Cursor
+    lda #charFullBlock                      // unused ASCII code is now Cursor
     jsr printChar
-    jmp !terminalLoop-
+    jmp !getStringLoop-
 !backspace:
-    ldx curPosX                             // don't go beyond prompt
-    cpx #1
+    ldx curPosX                             // don't go beyond getStringStart
+    cpx getStringStart
     beq !jmpLoop+
 
     ldx inpBufCur                           // decrement input buffer/cursor
@@ -148,15 +162,12 @@ terminalStart:
     jsr printChar                           // override current pos with blank to clear cursor
     jmp !printCursor-
 !jmpLoop:
-    jmp !terminalLoop-
+    jmp !getStringLoop-
 !enter:
-    jsr processInpBuf
-    jsr newTerminalLine
-!enterContinue:
-    jmp !prompt-
+    jmp !return+
 !arrowLeft:
-    ldx curPosX                             // don't go beyond prompt
-    cpx #1
+    ldx curPosX                             // don't go beyond getStringStart
+    cpx getStringStart
     beq !jmpLoop-
 
     dec inpBufCur                           // decrement input cursor
@@ -168,9 +179,10 @@ terminalStart:
     sta cursorChar
     jmp !printCursor-
 !arrowRight:
-    ldx inpBufLen                           // don't leave input buffer
-    inx                                     // + 1 for prompt
-    cpx curPosX
+    lda inpBufLen                           // don't leave input buffer
+    clc
+    adc getStringStart
+    cmp curPosX
     beq !jmpLoop-
 
     ldx inpBufCur                           // increment input cursor
@@ -190,6 +202,8 @@ terminalStart:
 !outsideInputString:
     jsr decrCursor
     jmp !printCursor-
+!return:
+    rts
 
 // ========================================
 
