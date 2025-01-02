@@ -4,17 +4,17 @@
 
 // ========================================
 
-.const screenWidth          = 40        // 40 chars width * 8 = 320px
-.const screenHeight         = 30        // 30 chars height * 8 = 240px
+.const screenWidth          = 40            // 40 chars width * 8 = 320px
+.const screenHeight         = 30            // 30 chars height * 8 = 240px
 
 // ========================================
 
-.const asciiLineFeed        = $0A
-.const asciiSpace           = $20
-.const asciiComma           = $2C
-.const asciiGreaterThan     = $3E
-.const asciiCursor          = $81
-.const asciiMiddleDot       = $B7
+.const charPilcrowSign      = $14           // used as line break symbol in 'bono'
+.const charSpace            = $20
+.const charComma            = $2C
+.const charGreaterThan      = $3E           // used as prompt in 'bono'
+.const charFullBlock        = $DB           // used as cursor in terminal and 'bono'
+.const charBulletOperator   = $F9           // used as space replacement in 'bono'
 
 // ========================================
 

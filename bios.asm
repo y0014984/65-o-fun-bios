@@ -98,7 +98,7 @@ brkRoutine:
 
     *=fontStart "Font"
 
-#import "fonts/Bm437CompaqThin8x8-8.asm"
+#import "fonts/Default.asm"
 
 // ========================================
 

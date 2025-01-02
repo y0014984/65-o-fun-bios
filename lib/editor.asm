@@ -106,11 +106,24 @@ editorStart:
     cpx #$FF
     bne !printableChar+
     cmp #'x'
-    bne !printableChar+ 
+    beq !ctrlX+
+    cmp #'o'
+    beq !ctrlO+
+    jmp !printableChar+
+
+!ctrlX:
     jmp editorReturn
 
+test: .byte $40
+
+!ctrlO:
+    inc test
+    lda test
+    sta $0400
+    jmp !editorLoop-
+
 !printCursor:
-    lda #asciiCursor                        // unused ASCII code is now Cursor
+    lda #charFullBlock                        // unused ASCII code is now Cursor
     jsr printChar
     jmp !editorLoop-
 
@@ -174,9 +187,9 @@ editorPrintableChar:
     lda currentPrintableChar
 
 !replaceSpace:
-    cmp #asciiSpace
+    cmp #charSpace
     bne !continue+
-    lda #asciiMiddleDot
+    lda #charBulletOperator
 !continue:
     jsr printChar
     jsr storeCharInCache
@@ -211,7 +224,7 @@ editorBackspace:
 // ========================================
 
 editorEnter:
-    lda #asciiLineFeed                      // print line feed symbol as end of line
+    lda #charPilcrowSign                      // print line feed symbol as end of line
     jsr printChar
     jsr storeCharInCache
 
@@ -310,7 +323,7 @@ editorCursorDown:
     pla
     sta curPosX
     txa
-    cmp #asciiLineFeed
+    cmp #charPilcrowSign
     bne !return+
 
 !cursorDown:
@@ -403,7 +416,7 @@ printHeader:
     jsr invertColors
 
 !fillHeader:
-    lda #asciiSpace                         // fill headline with whitespace
+    lda #charSpace                         // fill headline with whitespace
     ldx #0
 !loop:
     cpx #screenWidth

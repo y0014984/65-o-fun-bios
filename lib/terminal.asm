@@ -35,7 +35,7 @@ welcomeMessageLine3: .text @"type 'help' for command list\$00"
 // ========================================
 
 initTerminal:
-    lda #asciiSpace
+    lda #charSpace
     jsr fillScreen
 
     lda #7                                  // print welcome screen and prompt
@@ -77,12 +77,12 @@ terminalStart:
 
 !prompt:
     jsr resetInpBuf
-    lda #asciiGreaterThan                   // prompt
+    lda #charGreaterThan                   // prompt
     jsr printChar
     jsr incrCursor
-    lda #asciiCursor                        // unused ASCII code is now Cursor
+    lda #charFullBlock                        // unused ASCII code is now Cursor
     jsr printChar
-    lda #asciiSpace         
+    lda #charSpace         
     sta cursorChar
 !terminalLoop:
     jsr getCharFromBuf
@@ -121,11 +121,11 @@ terminalStart:
     jsr incrCursor
     jsr getCharOnCurPos
     bne !storeChar+
-    lda #asciiSpace                         // use ASCII SPACE instead of $00/CURSOR to store
+    lda #charSpace                         // use ASCII SPACE instead of $00/CURSOR to store
 !storeChar:
     sta cursorChar
 !printCursor:
-    lda #asciiCursor                        // unused ASCII code is now Cursor
+    lda #charFullBlock                        // unused ASCII code is now Cursor
     jsr printChar
     jmp !terminalLoop-
 !backspace:
@@ -143,7 +143,7 @@ terminalStart:
     lda cursorChar
     jsr printChar
     jsr decrCursor
-    lda #asciiSpace
+    lda #charSpace
     sta cursorChar
     jsr printChar                           // override current pos with blank to clear cursor
     jmp !printCursor-
@@ -228,7 +228,7 @@ uname: .text @"uname\$00"
 .byte $00
 
 processInpBuf:
-    lda #asciiSpace
+    lda #charSpace
     jsr printChar
 
 !echo:

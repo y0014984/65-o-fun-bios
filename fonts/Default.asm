@@ -1,12 +1,18 @@
-// reference: https://upload.wikimedia.org/wikipedia/commons/1/1b/ASCII-Table-wide.svg// ========================================
+// reference: https://upload.wikimedia.org/wikipedia/commons/1/1b/ASCII-Table-wide.svg
+
+// Manually recreated from C64 font
+
+// Some glyphs newly invented
+
+// Partially referencing codepage 437
 
 // ========================================
 
-.fill $0A*8, $00
+.fill $14*8, $00
 
 // ========================================
 
-LineFeed:                                   // $0A
+PilcrowSign:                                // $14
 .byte %00000000
 .byte %00000110
 .byte %00000110
@@ -18,7 +24,7 @@ LineFeed:                                   // $0A
 
 // ========================================
 
-.fill ($20-$0A-1)*8, $00
+.fill ($20-$14-1)*8, $00
 
 // ========================================
 
@@ -984,11 +990,11 @@ tildeCharacter:                             // $7E
 
 // ========================================
 
-.fill ($81-$7E-1)*8, $00
+.fill ($DB-$7E-1)*8, $00
 
 // ========================================
 
-cursorCharacter:                            // $81
+cursorCharacter:                            // $DB
 .byte %11111111
 .byte %11111111
 .byte %11111111
@@ -1000,11 +1006,11 @@ cursorCharacter:                            // $81
 
 // ========================================
 
-.fill ($B7-$81-1)*8, $00
+.fill ($F9-$DB-1)*8, $00
 
 // ========================================
 
-middleDotCharacter:                         // $B7
+bulletOperator:                             // $F9
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -1016,6 +1022,6 @@ middleDotCharacter:                         // $B7
 
 // ========================================
 
-.fill ($FF-$B7)*8, $00
+.fill ($FF-$F9)*8, $00
 
 // ========================================

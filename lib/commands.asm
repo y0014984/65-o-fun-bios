@@ -52,7 +52,7 @@ echoCommand:
 // ========================================
 
 clearCommand:
-    lda #asciiSpace
+    lda #charSpace
     jsr fillScreen
     lda #0
     sta curPosX
@@ -228,7 +228,7 @@ helpCommand:
     lda commandList+1,x
     cmp #$00
     beq !printAndReturn+
-    lda #asciiComma
+    lda #charComma
     sta helpString,y
     inx
     iny

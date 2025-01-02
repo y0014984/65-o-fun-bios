@@ -877,7 +877,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
     lda #$00
     jmp !continueReadKeyboard+
 !Space:
-    lda #asciiSpace
+    lda #charSpace
     jmp !continueReadKeyboard+
 !XXX:
     lda #$00
