@@ -112,16 +112,21 @@ editorStart:
     beq !ctrlX+
     cmp #'o'
     beq !ctrlO+
+    cmp #'r'
+    beq !ctrlR+
+
     jmp !printableChar+
 
 !ctrlX:
     jmp editorReturn
 
-test: .byte $40
-
 !ctrlO:
     jsr commandCtrlO
     jmp !editorLoop-
+
+!ctrlR:
+    jsr commandCtrlR
+    jmp !printCursor+
 
 !printCursor:
     lda #charFullBlock                      // unused ASCII code is now Cursor
@@ -260,6 +265,92 @@ commandCtrlO:
 
 // ========================================
 
+readLinesCounter: .byte $00
+
+commandCtrlR:
+    lda #0
+    sta currentLine
+    sta currentLineCur
+
+    jsr askFilename
+    lda inpBufLen
+    cmp #0
+    beq !noFilename+
+
+    jsr copyFilenameToCommandBuffer
+    jsr existsFilesystemObject
+    cmp #$FF
+    beq !fsObjectExists+
+    jmp !noFilesystemObject+
+
+!fsObjectExists:
+    jsr copyFilenameToCommandBuffer
+    jsr isFile
+    cmp #$FF
+    beq !fileExists+
+    lda #errCodeIsDir
+    jsr editorPrintError
+    jmp !return+
+
+!noFilesystemObject:
+    lda #errCodeNoFileOrDir
+    jsr editorPrintError
+    jmp !return+
+
+!printError:
+    lda storageComLastErr
+    jsr editorPrintError
+    jmp !return+
+
+!fileExists:
+
+    lda #0
+    sta readLinesCounter
+!loop:
+    jsr copyFilenameToCommandBuffer
+    jsr readFileContent
+    jsr copyReadWriteToLineBuffer
+    lda readLinesCounter
+    clc
+    adc currentLine
+    sta currentLine
+    jsr copyCacheToLine
+    lda tmpReadWriteBuffer
+    cmp #$FF
+    beq !finished+
+
+    cmp #$FF
+    bne !printError-
+
+    inc readLinesCounter
+    lda readLinesCounter
+    cmp editorHeight
+    beq !finished+
+    jmp !loop-
+
+!finished:
+    jsr updateFilename
+    jsr printXxxLinesRead
+    jsr clearEditMarker
+
+!noFilename:
+!return:
+    lda readLinesCounter
+    sta currentLine
+    clc
+    adc #editorStartY
+    sta curPosY
+    ldx readLinesCounter
+    lda lineLengthCache,x
+    sta currentLineCur
+    clc
+    adc #editorStartX
+    sta curPosX
+
+    rts
+
+// ========================================
+
 editorPrintError:
     jsr invertColors
     jsr clearStatLine
@@ -379,13 +470,13 @@ copyLineToReadWriteBuffer:
 
     lda #<editorCache
     sta sourceAddr
-    lda #>editorCache + 1
+    lda #>editorCache
     sta sourceAddr + 1
 
     ldx #0
 !loop:
     cpx saveLinesCounter
-    beq !endLoop+
+    beq !loopEnd+
     lda sourceAddr
     clc
     adc #editorWidth
@@ -395,7 +486,7 @@ copyLineToReadWriteBuffer:
     sta sourceAddr+1
     inx
     jmp !loop-
-!endLoop:
+!loopEnd:
                     
     lda #<tmpReadWriteBuffer+1              // copy R/W buffer to destination address + 1
     sta destinationAddr
@@ -411,6 +502,66 @@ copyLineToReadWriteBuffer:
     iny
     jmp !loop-
 !loopEnd:
+
+!return:
+    rts
+
+// ========================================
+
+copyReadWriteToLineBuffer:
+    ldx readLinesCounter                    // store line length (2nd byte in buffer)
+    lda tmpReadWriteBuffer+1
+    sta lineLengthCache,x
+
+    lda #<tmpReadWriteBuffer+2              // copy R/W buffer + 2 to source address
+    sta sourceAddr
+    lda #>tmpReadWriteBuffer+2
+    sta sourceAddr + 1
+
+    lda #<editorCache                       // copy editor cache to destination address
+    sta destinationAddr
+    lda #>editorCache
+    sta destinationAddr + 1
+
+    ldx #0                                  // set destination address to current line
+!loop:
+    cpx readLinesCounter
+    beq !loopEnd+
+    lda destinationAddr
+    clc
+    adc #editorWidth
+    sta destinationAddr
+    lda destinationAddr+1
+    adc #0
+    sta destinationAddr+1
+    inx
+    jmp !loop-
+!loopEnd:
+
+    ldy #0                                  // copy buffer to line
+!loop:
+    cpy tmpReadWriteBuffer+1                // tmpReadWriteBuffer + 1 stores the line length
+    beq !loopEnd+
+    lda (sourceAddr),Y
+    sta (destinationAddr),y
+    iny
+    cmp #charPilcrowSign
+    beq !newLine+
+    jmp !loop-
+!loopEnd:
+
+    jmp !return+
+
+!newLine:
+    inc readLinesCounter
+    lda destinationAddr
+    clc
+    adc #editorWidth
+    sta destinationAddr
+    lda destinationAddr+1
+    adc #0
+    sta destinationAddr+1
+    jmp !loop-
 
 !return:
     rts
@@ -457,6 +608,39 @@ printXxxLinesWritten:
     jsr printString
 
     lda saveLinesCounter
+    jsr print8
+
+    ldx #6
+!number:
+    lda num8Digits+0
+    sta editorStartStatLine+0,x
+    lda num8Digits+1
+    sta editorStartStatLine+1,x
+    lda num8Digits+2
+    sta editorStartStatLine+2,x
+
+!return:
+    jsr invertColors
+    rts
+
+// ========================================
+
+xxxLinesRead: .text @"[XXX lines read]\$00"
+
+printXxxLinesRead:
+    jsr invertColors
+    jsr clearStatLine
+
+    lda #5                                  // print sentence
+    sta curPosX
+    lda #editorStatLineIndex
+    sta curPosY
+    
+    ldx #<xxxLinesRead
+    ldy #>xxxLinesRead
+    jsr printString
+
+    lda readLinesCounter
     jsr print8
 
     ldx #6
@@ -923,7 +1107,7 @@ copyLineToCache:
     lda curPosX                             // set source address to start of line in screen mem
     pha
     lda #editorStartX
-    sta curPosX
+    sta curPosX 
     jsr calcCurPos
     lda tmpCursor
     sta sourceAddr
@@ -954,6 +1138,72 @@ copyLineToCache:
     ldy #0
 !loop:
     cpy #editorWidth
+    beq !return+
+    lda (sourceAddr),y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+
+!return:
+    rts
+
+// ========================================
+
+copyCacheToLine:
+!setSourceAddr:
+    lda #<editorCache                       // set source address to start of line in editor cache
+    sta sourceAddr
+    lda #>editorCache
+    sta sourceAddr+1
+    ldx #0
+!loop:
+    cpx currentLine
+    beq !setDestAddr+
+    lda sourceAddr
+    clc
+    adc #editorWidth
+    sta sourceAddr
+    lda sourceAddr+1
+    adc #0
+    sta sourceAddr+1
+    inx
+    jmp !loop-
+
+!setDestAddr:
+    lda curPosX                             // set destination address to start of line in screen mem
+    pha
+    lda curPosY
+    pha
+    lda #editorStartX
+    sta curPosX 
+    lda #editorStartY
+    sta curPosY
+
+    ldx #0
+!loop:
+    cpx currentLine
+    beq !loopEnd+
+    inc curPosY
+    inx
+    jmp !loop-
+!loopEnd:
+
+    jsr calcCurPos
+    lda tmpCursor
+    sta destinationAddr
+    lda tmpCursor+1
+    sta destinationAddr+1
+    pla
+    sta curPosY
+    pla
+    sta curPosX
+
+!copy:
+    ldx currentLine
+    ldy #0
+!loop:
+    tya
+    cmp lineLengthCache,x
     beq !return+
     lda (sourceAddr),y
     sta (destinationAddr),y

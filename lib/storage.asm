@@ -327,6 +327,26 @@ appendFileContent:
 
 // ========================================
 
+readFileContent:
+    lda #'R'
+    sta tmpCommandBuffer
+    lda #'F'
+    sta tmpCommandBuffer+1
+    lda #'C'
+    sta tmpCommandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
 waitForStorageResult:
 !loop:
     lda storageComFlow
