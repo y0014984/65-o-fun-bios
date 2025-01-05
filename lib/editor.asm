@@ -50,8 +50,8 @@ editorStart:
     jsr printHeader
     jsr printFooter
 
-    jsr clearLineLengthCache
     jsr clearEditorCache
+    jsr clearLineLengthCache
 
     lda #0
     sta currentLine
@@ -240,7 +240,7 @@ commandCtrlO:
     cmp #$00
     beq !finished+
     jsr copyFilenameToCommandBuffer
-    jsr copyLineToReadWriteBuffer
+    jsr copyEditorCacheToReadWriteBuffer
     jsr appendFileContent
     cmp #$FF
     bne !printError-
@@ -269,6 +269,7 @@ readLinesCounter: .byte $00
 
 commandCtrlR:
     lda #0
+    sta readLinesCounter
     sta currentLine
     sta currentLineCur
 
@@ -302,45 +303,48 @@ commandCtrlR:
     jsr editorPrintError
     jmp !return+
 
-!fileExists:
-
-    lda #0
-    sta readLinesCounter
+!fileExists:                                // copy data into editor cache
 !loop:
     jsr copyFilenameToCommandBuffer
     jsr readFileContent
-    jsr copyReadWriteToLineBuffer
-    lda readLinesCounter
-    clc
-    adc currentLine
-    sta currentLine
-    jsr copyCacheToLine
+    jsr copyReadWriteBufferToEditorCache
+
     lda tmpReadWriteBuffer
     cmp #$FF
-    beq !finished+
+    beq !fillScreen+
 
     cmp #$FF
     bne !printError-
 
-    inc readLinesCounter
-    lda readLinesCounter
-    cmp editorHeight
+    jmp !loop-
+
+!fillScreen:
+    lda #0
+    sta currentLine
+!loop:
+    lda currentLine
+    cmp #editorHeight
     beq !finished+
+    jsr copyEditorCacheToLine
+    inc currentLine
     jmp !loop-
 
 !finished:
+    lda currentLine
     jsr updateFilename
+    inc readLinesCounter                    // increment read lines counter for last line (partially)
     jsr printXxxLinesRead
     jsr clearEditMarker
 
 !noFilename:
 !return:
+    dec readLinesCounter
     lda readLinesCounter
     sta currentLine
     clc
     adc #editorStartY
     sta curPosY
-    ldx readLinesCounter
+    ldx currentLine
     lda lineLengthCache,x
     sta currentLineCur
     clc
@@ -439,8 +443,8 @@ updateFilename:
     sta sourceAddr
     lda tmpCursor + 1
     sta sourceAddr + 1
-                    
-    lda #<editorStartHeader+editorFilenameOffset    // copy header+editorFilenameOffset to destination address
+                                            // copy header+editorFilenameOffset to destination address
+    lda #<editorStartHeader+editorFilenameOffset
     sta destinationAddr
     lda #>editorStartHeader+editorFilenameOffset
     sta destinationAddr + 1
@@ -461,7 +465,7 @@ updateFilename:
 
 // ========================================
 
-copyLineToReadWriteBuffer:
+copyEditorCacheToReadWriteBuffer:
     jsr clearReadWriteBuffer
 
     ldx saveLinesCounter
@@ -498,6 +502,19 @@ copyLineToReadWriteBuffer:
     cpy tmpReadWriteBuffer                  // tmpReadWriteBuffer now stores the line length
     beq !loopEnd+
     lda (sourceAddr),Y
+
+    cmp #charBulletOperator                 // replace editor symbols
+    beq !replaceSpace+
+    cmp #charPilcrowSign
+    beq !replaceLineFeed+
+    jmp !continue+
+!replaceSpace:
+    lda #charSpace
+    jmp !continue+
+!replaceLineFeed:
+    lda #charLineFeed
+!continue:
+
     sta (destinationAddr),y
     iny
     jmp !loop-
@@ -508,10 +525,12 @@ copyLineToReadWriteBuffer:
 
 // ========================================
 
-copyReadWriteToLineBuffer:
-    ldx readLinesCounter                    // store line length (2nd byte in buffer)
-    lda tmpReadWriteBuffer+1
-    sta lineLengthCache,x
+tmpY: .byte $00
+currentLineLength: .byte $00
+
+copyReadWriteBufferToEditorCache:
+    lda #0
+    sta currentLineLength
 
     lda #<tmpReadWriteBuffer+2              // copy R/W buffer + 2 to source address
     sta sourceAddr
@@ -543,8 +562,22 @@ copyReadWriteToLineBuffer:
     cpy tmpReadWriteBuffer+1                // tmpReadWriteBuffer + 1 stores the line length
     beq !loopEnd+
     lda (sourceAddr),Y
+
+    cmp #charSpace                          // replace editor symbols
+    beq !replaceSpace+
+    cmp #charLineFeed
+    beq !replaceLineFeed+
+    jmp !continue+
+!replaceSpace:
+    lda #charBulletOperator
+    jmp !continue+
+!replaceLineFeed:
+    lda #charPilcrowSign
+!continue:
+
     sta (destinationAddr),y
     iny
+    inc currentLineLength
     cmp #charPilcrowSign
     beq !newLine+
     jmp !loop-
@@ -553,17 +586,39 @@ copyReadWriteToLineBuffer:
     jmp !return+
 
 !newLine:
-    inc readLinesCounter
-    lda destinationAddr
+    sty tmpY
+
+    lda destinationAddr                     // decrease destination address by current y value
+    sec
+    sbc currentLineLength
+    sta destinationAddr
+    lda destinationAddr+1
+    sbc #0
+    sta destinationAddr+1
+
+    lda destinationAddr                     // increase destination address to new line
     clc
     adc #editorWidth
     sta destinationAddr
     lda destinationAddr+1
     adc #0
     sta destinationAddr+1
+
+    ldx readLinesCounter                    // store line length
+    lda currentLineLength
+    sta lineLengthCache,x
+
+    inc readLinesCounter
+
+    lda #0
+    sta currentLineLength
+
     jmp !loop-
 
 !return:
+    ldx readLinesCounter                    // store last line length
+    lda currentLineLength
+    sta lineLengthCache,x
     rts
 
 // ========================================
@@ -751,10 +806,10 @@ editorEnter:
     lda #charPilcrowSign                    // print line feed symbol as end of line
     jsr printChar
     jsr storeCharInCache
-    inc currentLineCur
+/*     inc currentLineCur
     lda currentLineCur
     ldx currentLine
-    sta lineLengthCache,x
+    sta lineLengthCache,x */
 
     lda #editorStartX                       // new line
     sta curPosX
@@ -920,13 +975,13 @@ storeCharInCache:
 // ========================================
 
 clearLineLengthCache:
-    lda #0
+    lda #$00
     ldx #0
 !loop:
+    cpx #255
+    beq !return+
     sta lineLengthCache,x
     inx
-    cmp #0
-    beq !return+
     jmp !loop-
 !return:
     rts
@@ -934,7 +989,60 @@ clearLineLengthCache:
 // ========================================
 
 clearEditorCache:
-    // TODO
+    lda #0
+    sta currentLine
+
+!mainLoop:
+    lda currentLine
+    cmp #editorHeight
+    beq !return+
+    tax
+    lda lineLengthCache,x
+    cmp #0
+    bne !getLineStart+
+    inc currentLine
+    jmp !mainLoop-
+
+!getLineStart:
+    lda #<editorCache
+    sta destinationAddr
+    lda #>editorCache
+    sta destinationAddr+1
+
+    ldx #0
+!loop:
+    cpx currentLine
+    beq !loopEnd+
+    lda destinationAddr
+    clc
+    adc #editorWidth
+    sta destinationAddr
+    lda destinationAddr+1
+    adc #0
+    sta destinationAddr+1
+    inx
+    jmp !loop-
+!loopEnd:
+
+!clearLine:
+    ldy #0
+    ldx currentLine
+!loop:
+    tya
+    cmp lineLengthCache,x
+    beq !loopEnd+
+    lda #$00
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+!loopEnd:
+
+!incMainLoop:
+    inc currentLine
+    jmp !mainLoop-
+
+!mainLoopEnd:
+
 !return:
     rts
 
@@ -1149,16 +1257,17 @@ copyLineToCache:
 
 // ========================================
 
-copyCacheToLine:
+copyEditorCacheToLine:
 !setSourceAddr:
     lda #<editorCache                       // set source address to start of line in editor cache
     sta sourceAddr
     lda #>editorCache
     sta sourceAddr+1
+
     ldx #0
 !loop:
     cpx currentLine
-    beq !setDestAddr+
+    beq !loopEnd+
     lda sourceAddr
     clc
     adc #editorWidth
@@ -1168,6 +1277,7 @@ copyCacheToLine:
     sta sourceAddr+1
     inx
     jmp !loop-
+!loopEnd:
 
 !setDestAddr:
     lda curPosX                             // set destination address to start of line in screen mem
@@ -1199,7 +1309,7 @@ copyCacheToLine:
     sta curPosX
 
 !copy:
-    ldx currentLine
+    ldx currentLine                         // copy editor cache to line
     ldy #0
 !loop:
     tya

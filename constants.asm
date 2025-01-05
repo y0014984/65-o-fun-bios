@@ -9,10 +9,11 @@
 
 // ========================================
 
-.const charPilcrowSign      = $14           // used as line break symbol in 'bono'
+.const charLineFeed         = $0A
+.const charPilcrowSign      = $14           // used as line feed replacement in 'bono'
 .const charSpace            = $20
-.const charAsterisk         = $2A
-.const charComma            = $2C
+.const charAsterisk         = $2A           // used as edit marker in 'bono'
+.const charComma            = $2C           // used as separator in 'help' command
 .const charGreaterThan      = $3E           // used as prompt in 'bono'
 .const charFullBlock        = $DB           // used as cursor in terminal and 'bono'
 .const charBulletOperator   = $F9           // used as space replacement in 'bono'
