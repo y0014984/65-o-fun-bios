@@ -4,14 +4,11 @@
 
 // ========================================
 
-
-
+.label screenMemStart       = $0400
 .label biosStart            = $D000
-
 .label fontStart            = $F400
 
 .label hardwareVectors      = $FFFA
-
 .label softwareVectors      = $FFF6
 
 .label NMIB                 = $FFFA

@@ -7,26 +7,26 @@
 
 // ========================================
 
-.label tmpReadWriteBuffer = $0300
-.const tmpReadWriteBufferLength = 32
-.label tmpCommandBuffer = $0320
-.const tmpCommandBufferLength = 32
+.label readWriteBuffer = $0300
+.const readWriteBufferLength = 32
+.label commandBuffer = $0320
+.const commandBufferLength = 32
 
 // ========================================
 
 initStorage:
-    lda #<tmpReadWriteBuffer
+    lda #<readWriteBuffer
     sta storageAddrBufRW
-    lda #>tmpReadWriteBuffer
+    lda #>readWriteBuffer
     sta storageAddrBufRW + 1
-    lda #tmpReadWriteBufferLength
+    lda #readWriteBufferLength
     sta storageLenBufRW
 
-    lda #<tmpCommandBuffer
+    lda #<commandBuffer
     sta storageAddrBufCom
-    lda #>tmpCommandBuffer
+    lda #>commandBuffer
     sta storageAddrBufCom + 1
-    lda #tmpCommandBufferLength
+    lda #commandBufferLength
     sta storageLenBufCom
 
 !return:
@@ -36,11 +36,11 @@ initStorage:
 
 getFilesystemObjectCount:
     lda #'F'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'O'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'C'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -55,14 +55,14 @@ getFilesystemObjectCount:
 // ========================================
 
 getFilesystemObjectType:
-    sta tmpCommandBuffer+3
+    sta commandBuffer+3
 
     lda #'G'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'T'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -70,7 +70,7 @@ getFilesystemObjectType:
     jsr waitForStorageResult
 
     lda storageComRetVal
-    ldx tmpReadWriteBuffer
+    ldx readWriteBuffer
 
 !return:
     rts
@@ -78,16 +78,16 @@ getFilesystemObjectType:
 // ========================================
 
 getFileSize:
-    sta tmpCommandBuffer+3
+    sta commandBuffer+3
 
     jsr clearReadWriteBuffer
 
     lda #'G'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'S'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -95,8 +95,8 @@ getFileSize:
     jsr waitForStorageResult
 
     lda storageComRetVal
-    ldx tmpReadWriteBuffer
-    ldy tmpReadWriteBuffer+1
+    ldx readWriteBuffer
+    ldy readWriteBuffer+1
 
 !return:
     rts
@@ -104,16 +104,16 @@ getFileSize:
 // ========================================
 
 getFilesystemObjectName:
-    sta tmpCommandBuffer+3
+    sta commandBuffer+3
 
     jsr clearReadWriteBuffer
 
     lda #'G'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'N'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -129,11 +129,11 @@ getFilesystemObjectName:
 
 gotoDirectory:
     lda #'G'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'T'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'D'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -149,11 +149,11 @@ gotoDirectory:
 
 createDirectory:
     lda #'C'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'R'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'D'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -169,11 +169,11 @@ createDirectory:
 
 removeDirectory:
     lda #'R'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'M'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'D'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -189,11 +189,11 @@ removeDirectory:
 
 createFile:
     lda #'C'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'R'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'F'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -209,11 +209,11 @@ createFile:
 
 removeFile:
     lda #'R'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'M'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'F'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -229,11 +229,11 @@ removeFile:
 
 getWorkingDirectory:
     lda #'G'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'W'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'D'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -249,11 +249,11 @@ getWorkingDirectory:
 
 existsFilesystemObject:
     lda #'E'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'O'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -269,11 +269,11 @@ existsFilesystemObject:
 
 isFile:
     lda #'I'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'S'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'F'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -289,11 +289,11 @@ isFile:
 
 saveFileContent:
     lda #'S'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'C'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -309,11 +309,11 @@ saveFileContent:
 
 appendFileContent:
     lda #'A'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'C'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -329,11 +329,11 @@ appendFileContent:
 
 readFileContent:
     lda #'R'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'C'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -364,9 +364,9 @@ clearCommandBuffer:
     ldy #0
 !loop:
     lda #$00
-    sta tmpCommandBuffer,y
+    sta commandBuffer,y
     iny
-    cpy #tmpCommandBufferLength
+    cpy #commandBufferLength
     beq !return+
     jmp !loop-
 
@@ -379,9 +379,9 @@ clearReadWriteBuffer:
     ldy #0
 !loop:
     lda #$00
-    sta tmpReadWriteBuffer,y
+    sta readWriteBuffer,y
     iny
-    cpy #tmpReadWriteBufferLength
+    cpy #readWriteBufferLength
     beq !return+
     jmp !loop-
 
