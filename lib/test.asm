@@ -16,14 +16,14 @@
 
 testScreenTmp: .byte $00
 
-testScreen:                             // fill screen with all printable chars
+testScreen:                                 // fill screen with all printable chars
     lda #testScreenMin
     sta testScreenTmp
 !loop:
     jsr printChar
     jsr incrCursor
 
-    lsr foregroundColor                 // increment foreground color
+    lsr foregroundColor                     // increment foreground color
     lsr foregroundColor
     inc foregroundColor
     asl foregroundColor
@@ -77,11 +77,11 @@ testFontWrite:
 testStorage:
 !getFilesystemObjectCount:
     lda #'F'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'O'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'C'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
 
     lda #commandFlowReady
     sta storageComFlow
@@ -94,13 +94,13 @@ testStorage:
 
 !getFilesystemObjectType:
     lda #'G'
-    sta tmpCommandBuffer
+    sta commandBuffer
     lda #'F'
-    sta tmpCommandBuffer+1
+    sta commandBuffer+1
     lda #'T'
-    sta tmpCommandBuffer+2
+    sta commandBuffer+2
     lda #2
-    sta tmpCommandBuffer+3
+    sta commandBuffer+3
 
     lda #commandFlowReady
     sta storageComFlow
@@ -110,7 +110,7 @@ testStorage:
     cmp #commandFlowDone
     bne !waitForResult-
     lda storageComRetVal
-    ldx tmpReadWriteBuffer
+    ldx readWriteBuffer
 
     brk
     nop

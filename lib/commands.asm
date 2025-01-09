@@ -22,9 +22,9 @@ echoCommand:
     ldx #6                                  // copy start of parameter to source address
     stx curPosX
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
                     
     lda #<terminalOutputBuffer              // copy start of terminal output buffer to destination address
@@ -77,7 +77,7 @@ unameCommand:
 dateString: .text @"Wee Mon DD HH:MM:SS CET YEAR\$00" // template
 dayNames: .text "SunMonTueWedThuFriSat"
 monthNames: .text "JanFebMarAprMayJunJulAugSepOctNovDec"
-tmpIndex: .byte $00
+dateIndex: .byte $00
 
 dateCommand:
 !getWeekday:
@@ -90,14 +90,14 @@ dateCommand:
 
 !findWeekday:
     ldx #0
-    stx tmpIndex
+    stx dateIndex
 !loop:
-    cmp tmpIndex
+    cmp dateIndex
     beq !copyWeekday+
     inx
     inx
     inx
-    inc tmpIndex
+    inc dateIndex
     jmp !loop-
 
 !copyWeekday:
@@ -116,14 +116,14 @@ dateCommand:
 
 !findMonth:
     ldx #0
-    stx tmpIndex
+    stx dateIndex
 !loop:
-    cmp tmpIndex
+    cmp dateIndex
     beq !copyMonth+
     inx
     inx
     inx
-    inc tmpIndex
+    inc dateIndex
     jmp !loop-
 
 !copyMonth:
@@ -341,7 +341,7 @@ getName:
     ldy #0
     ldx #15
 !loop:
-    lda tmpReadWriteBuffer,y
+    lda readWriteBuffer,y
     cmp #$00
     beq !return+
     sta lsString,x
@@ -467,14 +467,14 @@ cdCommand:
     ldx #4                                  // copy start of parameter to source address
     stx curPosX
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
                     
-    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
     sta destinationAddr
-    lda #>tmpCommandBuffer+3
+    lda #>commandBuffer+3
     sta destinationAddr + 1
 
     ldy #0                                  // copy parameter to buffer until a $00 is reached
@@ -488,7 +488,7 @@ cdCommand:
 
 !gotoDir:
     jsr gotoDirectory
-    cmp #$FF
+    cmp #TRUE
     beq !return+
 
 !printError:
@@ -508,7 +508,7 @@ pwdCommand:
 !copyPath:
     ldx #0
 !loop:
-    lda tmpReadWriteBuffer,x
+    lda readWriteBuffer,x
     cmp #$00
     beq !printLine+
     sta pwdString,x
@@ -552,14 +552,14 @@ mkdirCommand:
     ldx #7                                  // copy start of parameter to source address
     stx curPosX
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
                     
-    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
     sta destinationAddr
-    lda #>tmpCommandBuffer+3
+    lda #>commandBuffer+3
     sta destinationAddr + 1
 
     ldy #0                                  // copy parameter to buffer until a $00 is reached
@@ -573,7 +573,7 @@ mkdirCommand:
 
 !gotoDir:
     jsr createDirectory
-    cmp #$FF
+    cmp #TRUE
     beq !return+
 
 !printError:
@@ -596,14 +596,14 @@ rmdirCommand:
     ldx #7                                  // copy start of parameter to source address
     stx curPosX
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
                     
-    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
     sta destinationAddr
-    lda #>tmpCommandBuffer+3
+    lda #>commandBuffer+3
     sta destinationAddr + 1
 
     ldy #0                                  // copy parameter to buffer until a $00 is reached
@@ -617,7 +617,7 @@ rmdirCommand:
 
 !gotoDir:
     jsr removeDirectory
-    cmp #$FF
+    cmp #TRUE
     beq !return+
 
 !printError:
@@ -640,14 +640,14 @@ touchCommand:
     ldx #7                                  // copy start of parameter to source address
     stx curPosX
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
                     
-    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
     sta destinationAddr
-    lda #>tmpCommandBuffer+3
+    lda #>commandBuffer+3
     sta destinationAddr + 1
 
     ldy #0                                  // copy parameter to buffer until a $00 is reached
@@ -661,7 +661,7 @@ touchCommand:
 
 !gotoDir:
     jsr createFile
-    cmp #$FF
+    cmp #TRUE
     beq !return+
 
 !printError:
@@ -684,14 +684,14 @@ rmCommand:
     ldx #4                                  // copy start of parameter to source address
     stx curPosX
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
                     
-    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
     sta destinationAddr
-    lda #>tmpCommandBuffer+3
+    lda #>commandBuffer+3
     sta destinationAddr + 1
 
     ldy #0                                  // copy parameter to buffer until a $00 is reached
@@ -705,7 +705,7 @@ rmCommand:
 
 !gotoDir:
     jsr removeFile
-    cmp #$FF
+    cmp #TRUE
     beq !return+
 
 !printError:

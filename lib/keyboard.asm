@@ -11,7 +11,7 @@
 
 // ========================================
 
-keyboardBuffer: .fill 16, $00           // 16 bytes of keyboardBuffer
+keyboardBuffer: .fill 16, $00               // 16 bytes of keyboardBuffer
 keyboardBufferPos: .byte $00
 
 shiftPressed: .byte $00
@@ -21,47 +21,47 @@ metaPressed: .byte $00
 
 // ========================================
 
-readKeyboard:                           // check all bits of $0200 - $0209 (hardware keyboard registers)
-    lda #$00                            // reset modifiers
+readKeyboard:                               // check all bits of $0200 - $0209 (hardware keyboard registers)
+    lda #FALSE                              // reset modifiers
     sta shiftPressed
     sta ctrlPressed
     sta altPressed
     sta metaPressed
 
-    lda $0209                           // check if shift is pressed
+    lda $0209                               // check if shift is pressed
     and #%00010000
     beq !continue+
-    lda #$FF
+    lda #TRUE
     sta shiftPressed
 
 !continue:
-    lda $0209                           // check if control is pressed
+    lda $0209                               // check if control is pressed
     and #%00100000
     beq !continue+
-    lda #$FF
+    lda #TRUE
     sta ctrlPressed
 
 !continue:
-    lda $0209                           // check if alt is pressed
+    lda $0209                               // check if alt is pressed
     and #%01000000
     beq !continue+
-    lda #$FF
+    lda #TRUE
     sta altPressed
 
 !continue:
-    lda $0209                           // check if meta is pressed
+    lda $0209                               // check if meta is pressed
     and #%10000000
     beq !testRegister0200+
-    lda #$FF
+    lda #TRUE
     sta metaPressed
 
 !testRegister0200:
-    lda $0200                           // skip to next byte if everything is 0
+    lda $0200                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0201+
 !continue:
-    lda $0200                           // test all other keys
+    lda $0200                               // test all other keys
     and #%00000001
     bne !KeyA+
     lda $0200
@@ -89,7 +89,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyA:
     lda #$61
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$41
 !notShifted:
@@ -98,7 +98,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyB:
     lda #$62
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$42
 !notShifted:
@@ -107,7 +107,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyC:
     lda #$63
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$43
 !notShifted:
@@ -116,7 +116,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyD:
     lda #$64
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$44
 !notShifted:
@@ -125,7 +125,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyE:
     lda #$65
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$45
 !notShifted:
@@ -134,7 +134,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyF:
     lda #$66
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$46
 !notShifted:
@@ -143,7 +143,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyG:
     lda #$67
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$47
 !notShifted:
@@ -152,14 +152,14 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyH:
     lda #$68
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$48
 !notShifted:
     jmp !continueReadKeyboard+
 
 !testRegister0201:
-    lda $0201                           // skip to next byte if everything is 0
+    lda $0201                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0202+
@@ -192,7 +192,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyI:
     lda #$69
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$49
 !notShifted:
@@ -201,7 +201,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyJ:
     lda #$6A
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$4A
 !notShifted:
@@ -210,7 +210,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyK:
     lda #$6B
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$4B
 !notShifted:
@@ -219,7 +219,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyL:
     lda #$6C
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$4C
 !notShifted:
@@ -228,7 +228,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyM:
     lda #$6D
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$4D
 !notShifted:
@@ -237,7 +237,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyN:
     lda #$6E
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$4E
 !notShifted:
@@ -246,7 +246,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyO:
     lda #$6F
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$4F
 !notShifted:
@@ -255,14 +255,14 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyP:
     lda #$70
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$50
 !notShifted:
     jmp !continueReadKeyboard+
 
 !testRegister0202:
-    lda $0202                           // skip to next byte if everything is 0
+    lda $0202                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0203+
@@ -295,7 +295,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyQ:
     lda #$71
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$51
 !notShifted:
@@ -304,7 +304,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyR:
     lda #$72
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$52
 !notShifted:
@@ -313,7 +313,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyS:
     lda #$73
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$53
 !notShifted:
@@ -322,7 +322,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyT:
     lda #$74
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$54
 !notShifted:
@@ -331,7 +331,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyU:
     lda #$75
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$55
 !notShifted:
@@ -340,7 +340,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyV:
     lda #$76
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$56
 !notShifted:
@@ -349,7 +349,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyW:
     lda #$77
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$57
 !notShifted:
@@ -358,14 +358,14 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyX:
     lda #$78
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$58
 !notShifted:
     jmp !continueReadKeyboard+
 
 !testRegister0203:
-    lda $0203                           // skip to next byte if everything is 0
+    lda $0203                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0204+
@@ -398,7 +398,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyY:
     lda #$79
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$59
 !notShifted:
@@ -407,7 +407,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !KeyZ:
     lda #$7A
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$5A
 !notShifted:
@@ -416,7 +416,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit1:
     lda #$31
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$21
 !notShifted:
@@ -425,7 +425,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit2:
     lda #$32
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$40
 !notShifted:
@@ -434,7 +434,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit3:
     lda #$33
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$23
 !notShifted:
@@ -443,7 +443,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit4:
     lda #$34
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$24
 !notShifted:
@@ -452,7 +452,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit5:
     lda #$35
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$25
 !notShifted:
@@ -461,14 +461,14 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit6:
     lda #$36
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$5E
 !notShifted:
     jmp !continueReadKeyboard+
 
 !testRegister0204:
-    lda $0204                           // skip to next byte if everything is 0
+    lda $0204                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0205+
@@ -501,7 +501,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit7:
     lda #$37
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$26
 !notShifted:
@@ -510,7 +510,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit8:
     lda #$38
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$2A
 !notShifted:
@@ -519,7 +519,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit9:
     lda #$39
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$28
 !notShifted:
@@ -528,7 +528,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Digit0:
     lda #$30
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$29
 !notShifted:
@@ -537,7 +537,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Minus:
     lda #$2D
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$5F
 !notShifted:
@@ -546,7 +546,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Equal:
     lda #$3D
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$2B
 !notShifted:
@@ -555,7 +555,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Comma:
     lda #$2C
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$3C
 !notShifted:
@@ -564,14 +564,14 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Period:
     lda #$2E
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$3E
 !notShifted:
     jmp !continueReadKeyboard+
 
 !testRegister0205:
-    lda $0205                           // skip to next byte if everything is 0
+    lda $0205                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0206+
@@ -602,22 +602,22 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
     bne !Backslash+
 
 !ArrowLeft:
-    lda #$11                            // ASCII DEVICE CONTROL 1
+    lda #$11                                // ASCII DEVICE CONTROL 1
     jmp !continueReadKeyboard+
 !ArrowRight:
-    lda #$12                            // ASCII DEVICE CONTROL 2
+    lda #$12                                // ASCII DEVICE CONTROL 2
     jmp !continueReadKeyboard+
 !ArrowUp:
-    lda #$13                            // ASCII DEVICE CONTROL 3
+    lda #$13                                // ASCII DEVICE CONTROL 3
     jmp !continueReadKeyboard+
 !ArrowDown:
-    lda #$14                            // ASCII DEVICE CONTROL 4
+    lda #$14                                // ASCII DEVICE CONTROL 4
     jmp !continueReadKeyboard+
 !Enter:
-    lda #$0A                            // ASCII LINE FEED
+    lda #$0A                                // ASCII LINE FEED
     jmp !continueReadKeyboard+
 !Backspace:
-    lda #$08                            // ASCII BACKSPACE
+    lda #$08                                // ASCII BACKSPACE
     jmp !continueReadKeyboard+
 !Escape:
     lda #$00
@@ -626,14 +626,14 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Backslash:
     lda #$5C
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$7C
 !notShifted:
     jmp !continueReadKeyboard+
 
 !testRegister0206:
-    lda $0206                           // skip to next byte if everything is 0
+    lda $0206                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0207+
@@ -689,7 +689,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
     jmp !continueReadKeyboard+
 
 !testRegister0207:
-    lda $0207                           // skip to next byte if everything is 0
+    lda $0207                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0208+
@@ -729,7 +729,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Semicolon:
     lda #$3B
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$3A
 !notShifted:
@@ -738,7 +738,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Quote:
     lda #$27
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$22
 !notShifted:
@@ -747,7 +747,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !BracketLeft:
     lda #$5B
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$7B
 !notShifted:
@@ -756,7 +756,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !BracketRight:
     lda #$5D
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$7D
 !notShifted:
@@ -765,7 +765,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Backquote:
     lda #$60
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$7E
 !notShifted:
@@ -776,7 +776,7 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
     jmp !continueReadKeyboard+
 
 !testRegister0208:
-    lda $0208                           // skip to next byte if everything is 0
+    lda $0208                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !testRegister0209+
@@ -831,14 +831,14 @@ readKeyboard:                           // check all bits of $0200 - $0209 (hard
 !Slash:
     lda #$2F
     ldx shiftPressed
-    cpx #$00
+    cpx #FALSE
     beq !notShifted+
     lda #$3F
 !notShifted:
     jmp !continueReadKeyboard+
 
 !testRegister0209:
-    lda $0209                           // skip to next byte if everything is 0
+    lda $0209                               // skip to next byte if everything is 0
     cmp #$00
     bne !continue+
     jmp !NoKeypress+

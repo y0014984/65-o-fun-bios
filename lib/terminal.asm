@@ -10,17 +10,15 @@
 
 // ========================================
 
-.label screenMemStart       = $0400
+.label pointer              = $FC           // WORD $FC + $FD = used by PRINT_STRING
+.label cursor               = $FE           // WORD $FE + $FF = current pos in screen mem
 
-.label tmpPointer           = $FC       // WORD $FC + $FD = used by PRINT_STRING
-.label tmpCursor            = $FE       // WORD $FE + $FF = current pos in screen mem
+.label curPosX              = $0340
+.label curPosY              = $0341
+.label cursorChar           = $0342
 
-.label curPosX              = $8000
-.label curPosY              = $8001
-.label cursorChar           = $8002
-
-.label inpBufLen     	    = $8005
-.label inpBufCur            = $8006
+.label inpBufLen     	    = $0343
+.label inpBufCur            = $0344
 
 // ========================================
 
@@ -246,8 +244,8 @@ processInpBuf:
     jsr printChar
 
 !echo:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda echo,Y
     cmp #$00
@@ -264,8 +262,8 @@ processInpBuf:
     jmp !return+
 
 !uname:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda uname,Y
     cmp #$00
@@ -282,8 +280,8 @@ processInpBuf:
     jmp !return+
 
 !date:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda date,Y
     cmp #$00
@@ -300,8 +298,8 @@ processInpBuf:
     jmp !return+
 
 !help:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda help,Y
     cmp #$00
@@ -318,8 +316,8 @@ processInpBuf:
     jmp !return+
 
 !ls:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda ls,Y
     cmp #$00
@@ -336,8 +334,8 @@ processInpBuf:
     jmp !return+
 
 !cd:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda cd,Y
     cmp #$00
@@ -354,8 +352,8 @@ processInpBuf:
     jmp !return+
 
 !pwd:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda pwd,Y
     cmp #$00
@@ -372,8 +370,8 @@ processInpBuf:
     jmp !return+
 
 !mkdir:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda mkdir,Y
     cmp #$00
@@ -390,8 +388,8 @@ processInpBuf:
     jmp !return+
 
 !rmdir:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda rmdir,Y
     cmp #$00
@@ -408,8 +406,8 @@ processInpBuf:
     jmp !return+
 
 !touch:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda touch,Y
     cmp #$00
@@ -426,8 +424,8 @@ processInpBuf:
     jmp !return+
 
 !rm:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda rm,Y
     cmp #$00
@@ -444,8 +442,8 @@ processInpBuf:
     jmp !return+
 
 !bono:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda bono,Y
     cmp #$00
@@ -462,8 +460,8 @@ processInpBuf:
     jmp !return+
 
 !clear:
-    ldx #1                              // the current input buffer is in line curPosY after
-    ldy #0                              // the prompt and has the length inpBufLen
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
 !loop:
     lda clear,Y
     cmp #$00
@@ -489,38 +487,39 @@ processInpBuf:
 
 // ========================================
 
-// calculate current cur pos
+// calculate current cur pos and stores it
+// in cursor (ZP) as a memory location
 
 // Affects: A, Y
 // Preserves: X
 
 calcCurPos:
     lda #<screenMemStart
-    sta tmpCursor
+    sta cursor
     lda #>screenMemStart
-    sta tmpCursor + 1
+    sta cursor + 1
 
     ldy curPosY
-!addY:                                  // loop through all rows and
-    cpy #0                              // at the end add current x
-    beq !addX+                          // to get current cursor
-    lda tmpCursor
+!addY:                                      // loop through all rows and
+    cpy #0                                  // at the end add current x
+    beq !addX+                              // to get current cursor
+    lda cursor
     clc
-    adc #screenWidth                    // add screen width to cursor
-    sta tmpCursor
-    lda tmpCursor + 1
+    adc #screenWidth                        // add screen width to cursor
+    sta cursor
+    lda cursor + 1
     adc #0
-    sta tmpCursor + 1
+    sta cursor + 1
     dey 
     jmp !addY-
 !addX:
-    lda tmpCursor
+    lda cursor
     clc
-    adc curPosX                         // add x to cursor
-    sta tmpCursor
-    lda tmpCursor + 1
+    adc curPosX                             // add x to cursor
+    sta cursor
+    lda cursor + 1
     adc #0
-    sta tmpCursor + 1
+    sta cursor + 1
 !return:
     rts
 
@@ -532,12 +531,12 @@ calcCurPos:
 // Preserves: A, Y
 
 printChar:
-    pha                                 // store A to stack
+    pha                                     // store A to stack
     jsr calcCurPos
 !print:
-    pla                                 // get current char stored in A
+    pla                                     // get current char stored in A
     ldx #0
-    sta (tmpCursor,x)                   // print char to screen
+    sta (cursor,x)                          // print char to screen
 !return:
     rts
 
@@ -554,15 +553,15 @@ printString:
     jsr calcCurPos
     pla
     tay
-    stx tmpPointer
-    sty tmpPointer + 1
+    stx pointer
+    sty pointer + 1
 
     ldy #0
 !loop:
-    lda (tmpPointer),Y
+    lda (pointer),Y
     cmp #$00
     beq !return+
-    sta (tmpCursor),Y                   // print char to screen
+    sta (cursor),Y                          // print char to screen
     iny
     jmp !loop-
 
@@ -575,7 +574,7 @@ printString:
 // Preserves: X, Y
 
 newTerminalLine:
-    lda #0                              // new line
+    lda #0                                  // new line
     sta curPosX
     inc curPosY
     lda #screenHeight - 1
@@ -684,7 +683,7 @@ printError:
 // Affects: A
 // Preserves: XY
 
-tmpCharOnCurPos: .byte $00
+charOnCurPos: .byte $00
 
 getCharOnCurPos:
     tya
@@ -696,11 +695,11 @@ getCharOnCurPos:
     txa
     pha
     ldx #0
-    lda (tmpCursor,x)                   // get char from current cursor position
-    sta tmpCharOnCurPos
+    lda (cursor,x)                          // get char from current cursor position
+    sta charOnCurPos
     pla
     tax
-    lda tmpCharOnCurPos
+    lda charOnCurPos
 !return:
     rts
 
@@ -712,22 +711,22 @@ incrCursor:
 // Preserves: A
 
 !incX:
-    inc curPosX                         // set cur pos to next pos
+    inc curPosX                             // set cur pos to next pos
     ldx curPosX
-    cpx #screenWidth                    // screen width reached?
+    cpx #screenWidth                        // screen width reached?
     beq !incY+
     jmp !return+
 !incY:
     ldx #0
-    stx curPosX                         // set pos x to 0
-    inc curPosY                         // increment pos y
+    stx curPosX                             // set pos x to 0
+    inc curPosY                             // increment pos y
     ldy curPosY
-    cpy #screenHeight                   // screen height reached?
+    cpy #screenHeight                       // screen height reached?
     beq !reset+
     jmp !return+
 !reset:
     ldy #0
-    sty curPosY                         // set pos y to 0
+    sty curPosY                             // set pos y to 0
 !return:
     rts
 
@@ -739,22 +738,22 @@ decrCursor:
 // Preserves: A
 
 !decX:
-    dec curPosX                         // set cur pos to previous pos
+    dec curPosX                             // set cur pos to previous pos
     ldx curPosX
-    cpx #255                            // left screen border reached?
+    cpx #255                                // left screen border reached?
     beq !decY+
     jmp !return+
 !decY:
     ldx #screenWidth - 1
-    stx curPosX                         // set pos x to screen width
-    dec curPosY                         // decrement pos y
+    stx curPosX                             // set pos x to screen width
+    dec curPosY                             // decrement pos y
     ldy curPosY
-    cpy #255                            // upper screen border reached?
+    cpy #255                                // upper screen border reached?
     beq !reset+
     jmp !return+
 !reset:
     ldy #screenHeight - 1
-    sty curPosY                         // set pos y to screen height
+    sty curPosY                             // set pos y to screen height
 !return:
     rts
 
@@ -781,13 +780,13 @@ terminalScrollUp:
     lda (sourceAddr),Y
     sta (destinationAddr),Y
 
-    lda #<sourceAddr                   // increment source address
+    lda #<sourceAddr                        // increment source address
     jsr incrZeropageAddr
 
-    lda #<destinationAddr              // increment destination address
+    lda #<destinationAddr                   // increment destination address
     jsr incrZeropageAddr
 
-    lda sourceAddr + 1            // check if end of screen mem reached
+    lda sourceAddr + 1                      // check if end of screen mem reached
     cmp #>(screenMemStart + (screenWidth * screenHeight))
     bne !loop-
     lda sourceAddr
@@ -807,25 +806,25 @@ terminalScrollUp:
 // Affects: A, X, Y
 
 fillScreen:
-    tax                                 // store ASCII character to X
+    tax                                     // store ASCII character to X
     lda #<screenMemStart
     sta destinationAddr
     lda #>screenMemStart
-    sta destinationAddr + 1
+    sta destinationAddr+1
 
     ldy #0
 !loop:
-    txa                                 // retrieve ASCII character from X
-    sta (destinationAddr),Y            // store ASCII character to screen mem start
+    txa                                     // retrieve ASCII character from X
+    sta (destinationAddr),Y                 // store ASCII character to screen mem start
 
-    lda #<destinationAddr              // increment destination address
+    lda #<destinationAddr                   // increment destination address
     jsr incrZeropageAddr
 
-    lda destinationAddr + 1            // check if end of screen mem reached
-    cmp #>(screenMemStart + (screenWidth * screenHeight))
+    lda destinationAddr+1                   // check if end of screen mem reached
+    cmp #>(screenMemStart+(screenWidth*screenHeight))
     bne !loop-
     lda destinationAddr
-    cmp #<(screenMemStart + (screenWidth * screenHeight))
+    cmp #<(screenMemStart+(screenWidth*screenHeight))
     bne !loop-
 !return:
     rts

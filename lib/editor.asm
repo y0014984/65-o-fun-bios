@@ -14,36 +14,92 @@ footer2: .text @"~^X~Exit  ~^R~Read File  ~^U~Paste\$00"
 
 // ========================================
 
-.const editorStartHeader    = screenMemStart
-.const editorStartFooter1   = screenMemStart+(screenWidth*(screenHeight-2))
-.const editorStartFooter2   = screenMemStart+(screenWidth*(screenHeight-1))
-.const editorHeaderHeight   = 2
-.const editorFooterHeight   = 3
-.const editorLineNumbers    = 3
-.const editorLineNumberGap  = 1
-.const editorStatLineIndex  = 27
-.const editorStartX         = editorLineNumbers+editorLineNumberGap
-.const editorStartY         = editorHeaderHeight
-.const editorHeight         = screenHeight-editorHeaderHeight-editorFooterHeight
-.const editorWidth          = screenWidth-editorStartX
-.const editorStartStatLine  = screenMemStart+(screenWidth*editorStatLineIndex)
-.const editorFilenameOffset = 15
+/*
+Vertical    (30)
+----------------
+Header       (1)
+vGap         (1)
+Editor      (25)
+StatusLine   (1)
+Footer1      (1)
+Footer2      (1)
+
+Horizontal  (40)
+----------------
+LineNumbers  (3)
+hGap         (1)
+Editor      (36)
+*/
+
+// ========================================
+// CONSTANTS
+// ========================================
+
+// vertical elements sizes
+.const headerWidth          = screenWidth
+.const headerHeight         = 1
+
+.const vGapWidth            = screenWidth
+.const vGapHeight           = 1
+
+.const statusLineWidth      = screenWidth
+.const statusLineHeight     = 1
+
+.const footer1Width         = screenWidth
+.const footer1Height        = 1
+
+.const footer2Width         = screenWidth
+.const footer2Height        = 1
+
+// horizontal elements sizes
+.const lineNumbersWidth     = 3
+.const lineNumbersHeight    = screenHeight-headerHeight-vGapHeight-statusLineHeight-footer1Height-footer2Height
+
+.const hGapWidth            = 1
+.const hGapHeight           = lineNumbersHeight
+
+.const editorHeight         = lineNumbersHeight
+.const editorWidth          = screenWidth-lineNumbersWidth-hGapWidth
+
+// screen mem positions
+.const startHeader          = screenMemStart
+.const startLineNumbers     = startHeader+(headerWidth*headerHeight)+(vGapWidth*vGapHeight)
+.const startEditor          = startLineNumbers+lineNumbersWidth+hGapWidth
+.const startStatusLine      = startLineNumbers+((lineNumbersWidth+hGapWidth+editorWidth)*lineNumbersHeight)
+.const startFooter1         = startStatusLine+(statusLineWidth*statusLineHeight)
+.const startFooter2         = startFooter1+(footer1Width*footer1Height)
+
+// cur positions
+.const lineNumbersStartX    = 0
+.const lineNumbersStartY    = headerHeight+vGapHeight
+.const editorStartX         = lineNumbersWidth+hGapWidth
+.const editorStartY         = lineNumbersStartY
+.const statusLineX          = 0
+.const statusLineY          = headerHeight+vGapHeight+lineNumbersHeight
+
+// Offsets
+.const editMarkerOffset     = 14
+.const filenameOffset       = 15
+.const questionOffset       = 5
+.const errorOffset          = 5
+.const infoOffset           = 5
 
 // ========================================
 
-.label lineLengthCache      = $0a00         // max 256 lines
-.label editorCache          = $0b00         // currently each line has max width = editor width
+.label editorCache          = $08B0         // ends at biosStart
+.label editorCacheCursor    = $F6           // Word/2 Bytes
 
 // ========================================
-
-currentLine: .byte $00                      // max 256 lines per document
-currentLineCur: .byte $00                   // max line width depends on screen width
+// VARIABLES
+// ========================================
 
 currentPrintableChar: .byte $00
 
 // ========================================
 
 editorStart:
+    jsr initEditorVariables
+
     lda #$00
     jsr fillScreen
 
@@ -51,46 +107,41 @@ editorStart:
     jsr printFooter
 
     jsr clearEditorCache
-    jsr clearLineLengthCache
 
     lda #0
-    sta currentLine
-    sta currentLineCur
-
-    lda currentLine
-    clc
-    adc #1                                  // always start at 1
     jsr printLineNumbers
 
-    lda #0
-    sta curPosX
-    lda #editorHeaderHeight
-    sta curPosY
-
-    lda #editorStartX
-    sta curPosX
-    lda #editorStartY
-    sta curPosY
+    jsr resetEditorCursor
 
     jmp !printCursor+
 
 !editorLoop:
     jsr getCharFromBuf
+    sta currentPrintableChar
+
     cmp #$00                                // no input
     beq !editorLoop-
-    cmp #$08                                // ASCII BACKSPACE
+
+    cmp #ctrlBackspace
     beq !backspaceJump+
-    cmp #$0A                                // ASCII LINE FEED
+
+    cmp #ctrlLineFeed
     beq !enterJump+
-    cmp #$11                                // ASCII DEVICE CONTROL 1 = ARROW LEFT
+
+    cmp #ctrlArrowLeft
     beq !arrowLeftJump+
-    cmp #$12                                // ASCII DEVICE CONTROL 2 = ARROW RIGHT
+
+    cmp #ctrlArrowRight
     beq !arrowRightJump+
-    cmp #$13                                // ASCII DEVICE CONTROL 3 = ARROW UP
+
+    cmp #ctrlArrowUp
     beq !arrowUpJump+
-    cmp #$14                                // ASCII DEVICE CONTROL 4 = ARROW DOWN
+
+    cmp #ctrlArrowDown
     beq !arrowDownJump+
-    jmp !jumpTableEnd+
+
+    jmp !checkShortcuts+
+
 !backspaceJump:
     jmp !backspace+
 !enterJump:
@@ -103,10 +154,10 @@ editorStart:
     jmp !arrowUp+
 !arrowDownJump:
     jmp !arrowDown+
-!jumpTableEnd:
-    sta currentPrintableChar
+
+!checkShortcuts:
     ldx ctrlPressed                         // check for special commands
-    cpx #$FF
+    cpx #TRUE
     bne !printableChar+
     cmp #'x'
     beq !ctrlX+
@@ -120,16 +171,16 @@ editorStart:
 !ctrlX:
     jmp editorReturn
 
-!ctrlO:
-    jsr commandCtrlO
-    jmp !editorLoop-
-
 !ctrlR:
     jsr commandCtrlR
     jmp !printCursor+
 
+!ctrlO:
+    jsr commandCtrlO
+    jmp !editorLoop-
+
 !printCursor:
-    lda #charFullBlock                      // unused ASCII code is now Cursor
+    lda #charFullBlock
     jsr printChar
     jmp !editorLoop-
 
@@ -188,12 +239,26 @@ editorStart:
 
 // ========================================
 
+initEditorVariables:
+    jsr resetEditorCacheCursor
+
+    lda #$00
+    sta cursorChar
+!return:
+    rts
+
+// ========================================
+
 saveLinesCounter: .byte $00
 
 commandCtrlO:
     lda curPosX
     pha
     lda curPosY
+    pha
+    lda editorCacheCursor
+    pha 
+    lda editorCacheCursor+1
     pha
 
     jsr askFilename
@@ -203,14 +268,14 @@ commandCtrlO:
 
     jsr copyFilenameToCommandBuffer
     jsr existsFilesystemObject
-    cmp #$FF
+    cmp #TRUE
     beq !fsObjectExists+
     jmp !saveNewFile+
 
 !fsObjectExists:
     jsr copyFilenameToCommandBuffer
     jsr isFile
-    cmp #$FF
+    cmp #TRUE
     beq !fileExists+
     lda #errCodeIsDir
     jsr editorPrintError
@@ -229,34 +294,36 @@ commandCtrlO:
 !saveNewFile:
     jsr copyFilenameToCommandBuffer
     jsr createFile
-    cmp #$FF
+    cmp #TRUE
     bne !printError-
 
     lda #0
     sta saveLinesCounter
+    jsr resetEditorCacheCursor
 !loop:
-    ldx saveLinesCounter
-    lda lineLengthCache,x
-    cmp #$00
-    beq !finished+
     jsr copyFilenameToCommandBuffer
     jsr copyEditorCacheToReadWriteBuffer
     jsr appendFileContent
-    cmp #$FF
+    cmp #TRUE
     bne !printError-
-    inc saveLinesCounter
-    lda saveLinesCounter
-    cmp editorHeight
+    ldy #0
+    lda (editorCacheCursor),y
+    cmp #$00
     beq !finished+
     jmp !loop-
 
 !finished:
     jsr updateFilename
+    inc saveLinesCounter                    // increment read lines counter for last line (partially)
     jsr printXxxLinesWritten
     jsr clearEditMarker
 
 !noFilename:
 !return:
+    pla
+    sta editorCacheCursor+1
+    pla
+    sta editorCacheCursor
     pla
     sta curPosY
     pla
@@ -270,8 +337,6 @@ readLinesCounter: .byte $00
 commandCtrlR:
     lda #0
     sta readLinesCounter
-    sta currentLine
-    sta currentLineCur
 
     jsr askFilename
     lda inpBufLen
@@ -280,14 +345,14 @@ commandCtrlR:
 
     jsr copyFilenameToCommandBuffer
     jsr existsFilesystemObject
-    cmp #$FF
+    cmp #TRUE
     beq !fsObjectExists+
     jmp !noFilesystemObject+
 
 !fsObjectExists:
     jsr copyFilenameToCommandBuffer
     jsr isFile
-    cmp #$FF
+    cmp #TRUE
     beq !fileExists+
     lda #errCodeIsDir
     jsr editorPrintError
@@ -303,34 +368,25 @@ commandCtrlR:
     jsr editorPrintError
     jmp !return+
 
-!fileExists:                                // copy data into editor cache
+!fileExists:
+    jsr clearEditorCache
+    jsr resetEditorCacheCursor
 !loop:
     jsr copyFilenameToCommandBuffer
     jsr readFileContent
     jsr copyReadWriteBufferToEditorCache
 
-    lda tmpReadWriteBuffer
-    cmp #$FF
+    lda readWriteBuffer
+    cmp #TRUE
     beq !fillScreen+
-
-    cmp #$FF
-    bne !printError-
-
-    jmp !loop-
+    cmp #FALSE
+    beq !printError-
+    jmp !loop-                              // otherwise status is $80 which means not end of file
 
 !fillScreen:
-    lda #0
-    sta currentLine
-!loop:
-    lda currentLine
-    cmp #editorHeight
-    beq !finished+
-    jsr copyEditorCacheToLine
-    inc currentLine
-    jmp !loop-
+    jsr copyEditorCacheToScreenMem
 
 !finished:
-    lda currentLine
     jsr updateFilename
     inc readLinesCounter                    // increment read lines counter for last line (partially)
     jsr printXxxLinesRead
@@ -338,18 +394,11 @@ commandCtrlR:
 
 !noFilename:
 !return:
-    dec readLinesCounter
-    lda readLinesCounter
-    sta currentLine
-    clc
-    adc #editorStartY
-    sta curPosY
-    ldx currentLine
-    lda lineLengthCache,x
-    sta currentLineCur
-    clc
-    adc #editorStartX
-    sta curPosX
+    jsr resetEditorCursor
+    jsr resetEditorCacheCursor
+
+    lda startEditor
+    sta cursorChar
 
     rts
 
@@ -359,9 +408,9 @@ editorPrintError:
     jsr invertColors
     jsr clearStatLine
 
-    ldx #5
+    ldx #errorOffset
     stx curPosX
-    ldy #editorStatLineIndex
+    ldy #statusLineY
     sty curPosY
 
     cmp #errCodeFileExists
@@ -395,17 +444,17 @@ editorPrintError:
 // ========================================
 
 copyFilenameToCommandBuffer:
-    lda #15
+    lda #filenameOffset
     sta curPosX
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
                     
-    lda #<tmpCommandBuffer+3                // copy command buffer + 3 to destination address
+    lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
     sta destinationAddr
-    lda #>tmpCommandBuffer+3
+    lda #>commandBuffer+3
     sta destinationAddr + 1
 
     ldy #0                                  // copy filename to buffer
@@ -429,24 +478,26 @@ updateFilename:
     lda #charSpace
     ldx #0                                  // clear filename
 !loop:
-    cpx #screenWidth-editorFilenameOffset
+    cpx #screenWidth-filenameOffset
     beq !loopEnd+
-    sta editorStartHeader+editorFilenameOffset,x
+    sta startHeader+filenameOffset,x
     inx
     jmp !loop-
 !loopEnd:
 
-    lda #15
+    lda #filenameOffset
     sta curPosX
+    lda #statusLineY
+    sta curPosY
     jsr calcCurPos
-    lda tmpCursor
+    lda cursor                              // copy statusLine+filenameOffset to source address
     sta sourceAddr
-    lda tmpCursor + 1
+    lda cursor + 1
     sta sourceAddr + 1
-                                            // copy header+editorFilenameOffset to destination address
-    lda #<editorStartHeader+editorFilenameOffset
+                                            
+    lda #<startHeader+filenameOffset        // copy header+filenameOffset to destination address
     sta destinationAddr
-    lda #>editorStartHeader+editorFilenameOffset
+    lda #>startHeader+filenameOffset
     sta destinationAddr + 1
 
     ldy #0                                  // copy filename to header
@@ -468,157 +519,72 @@ updateFilename:
 copyEditorCacheToReadWriteBuffer:
     jsr clearReadWriteBuffer
 
-    ldx saveLinesCounter
-    lda lineLengthCache,x
-    sta tmpReadWriteBuffer
-
-    lda #<editorCache
+    lda editorCacheCursor                   // copy editor cache cursor to source address
     sta sourceAddr
-    lda #>editorCache
-    sta sourceAddr + 1
-
-    ldx #0
-!loop:
-    cpx saveLinesCounter
-    beq !loopEnd+
-    lda sourceAddr
-    clc
-    adc #editorWidth
-    sta sourceAddr
-    lda sourceAddr+1
-    adc #0
+    lda editorCacheCursor+1
     sta sourceAddr+1
-    inx
-    jmp !loop-
-!loopEnd:
                     
-    lda #<tmpReadWriteBuffer+1              // copy R/W buffer to destination address + 1
+    lda #<readWriteBuffer+1                 // copy R/W buffer to destination address + 1
     sta destinationAddr
-    lda #>tmpReadWriteBuffer+1
-    sta destinationAddr + 1
+    lda #>readWriteBuffer+1
+    sta destinationAddr+1
 
-    ldy #0                                  // copy line to buffer
+    ldy #0                                  // copy editor cache to buffer
 !loop:
-    cpy tmpReadWriteBuffer                  // tmpReadWriteBuffer now stores the line length
-    beq !loopEnd+
+    cpy #readWriteBufferLength-1
+    beq !return+
     lda (sourceAddr),Y
-
-    cmp #charBulletOperator                 // replace editor symbols
-    beq !replaceSpace+
-    cmp #charPilcrowSign
-    beq !replaceLineFeed+
-    jmp !continue+
-!replaceSpace:
-    lda #charSpace
-    jmp !continue+
-!replaceLineFeed:
-    lda #charLineFeed
+    cmp #ctrlLineFeed
+    beq !incrSaveLinesCounter+
+    cmp #$00
+    beq !return+
 !continue:
-
     sta (destinationAddr),y
     iny
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
     jmp !loop-
-!loopEnd:
+
+!incrSaveLinesCounter:
+    inc saveLinesCounter
+    jmp !continue-
 
 !return:
+    sty readWriteBuffer                     // store written bytes count
     rts
 
 // ========================================
 
-tmpY: .byte $00
-currentLineLength: .byte $00
-
 copyReadWriteBufferToEditorCache:
-    lda #0
-    sta currentLineLength
-
-    lda #<tmpReadWriteBuffer+2              // copy R/W buffer + 2 to source address
+    lda #<readWriteBuffer+2                 // copy R/W buffer + 2 to source address
     sta sourceAddr
-    lda #>tmpReadWriteBuffer+2
-    sta sourceAddr + 1
+    lda #>readWriteBuffer+2
+    sta sourceAddr+1
 
-    lda #<editorCache                       // copy editor cache to destination address
+    lda editorCacheCursor                   // copy editor cache cursor to destination address
     sta destinationAddr
-    lda #>editorCache
-    sta destinationAddr + 1
-
-    ldx #0                                  // set destination address to current line
-!loop:
-    cpx readLinesCounter
-    beq !loopEnd+
-    lda destinationAddr
-    clc
-    adc #editorWidth
-    sta destinationAddr
-    lda destinationAddr+1
-    adc #0
+    lda editorCacheCursor+1
     sta destinationAddr+1
-    inx
-    jmp !loop-
-!loopEnd:
 
     ldy #0                                  // copy buffer to line
 !loop:
-    cpy tmpReadWriteBuffer+1                // tmpReadWriteBuffer + 1 stores the line length
-    beq !loopEnd+
-    lda (sourceAddr),Y
-
-    cmp #charSpace                          // replace editor symbols
-    beq !replaceSpace+
-    cmp #charLineFeed
-    beq !replaceLineFeed+
-    jmp !continue+
-!replaceSpace:
-    lda #charBulletOperator
-    jmp !continue+
-!replaceLineFeed:
-    lda #charPilcrowSign
+    cpy readWriteBuffer+1                   // readWriteBuffer + 1 stores the line length
+    beq !return+
+    lda (sourceAddr),y
+    cmp #ctrlLineFeed
+    beq !incrReadLinesCounter+
 !continue:
-
     sta (destinationAddr),y
     iny
-    inc currentLineLength
-    cmp #charPilcrowSign
-    beq !newLine+
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
     jmp !loop-
-!loopEnd:
 
-    jmp !return+
-
-!newLine:
-    sty tmpY
-
-    lda destinationAddr                     // decrease destination address by current y value
-    sec
-    sbc currentLineLength
-    sta destinationAddr
-    lda destinationAddr+1
-    sbc #0
-    sta destinationAddr+1
-
-    lda destinationAddr                     // increase destination address to new line
-    clc
-    adc #editorWidth
-    sta destinationAddr
-    lda destinationAddr+1
-    adc #0
-    sta destinationAddr+1
-
-    ldx readLinesCounter                    // store line length
-    lda currentLineLength
-    sta lineLengthCache,x
-
+!incrReadLinesCounter:
     inc readLinesCounter
-
-    lda #0
-    sta currentLineLength
-
-    jmp !loop-
+    jmp !continue-
 
 !return:
-    ldx readLinesCounter                    // store last line length
-    lda currentLineLength
-    sta lineLengthCache,x
     rts
 
 // ========================================
@@ -629,16 +595,16 @@ askFilename:
     jsr invertColors
     jsr clearStatLine
 
-    lda #5                                  // print question
+    lda #questionOffset                     // print question
     sta curPosX
-    lda #editorStatLineIndex
+    lda #statusLineY
     sta curPosY
     
     ldx #<filename
     ldy #>filename
     jsr printString
 
-    lda #15
+    lda #filenameOffset                     // get answer
     sta curPosX
     jsr getString
 !return:
@@ -648,14 +614,15 @@ askFilename:
 // ========================================
 
 xxxLinesWritten: .text @"[XXX lines written]\$00"
+.const linesWrittenNumberOffset = 1
 
 printXxxLinesWritten:
     jsr invertColors
     jsr clearStatLine
 
-    lda #5                                  // print sentence
+    lda #infoOffset                         // print sentence
     sta curPosX
-    lda #editorStatLineIndex
+    lda #statusLineY
     sta curPosY
     
     ldx #<xxxLinesWritten
@@ -665,14 +632,14 @@ printXxxLinesWritten:
     lda saveLinesCounter
     jsr print8
 
-    ldx #6
+    ldx #infoOffset+linesWrittenNumberOffset
 !number:
     lda num8Digits+0
-    sta editorStartStatLine+0,x
+    sta startStatusLine+0,x
     lda num8Digits+1
-    sta editorStartStatLine+1,x
+    sta startStatusLine+1,x
     lda num8Digits+2
-    sta editorStartStatLine+2,x
+    sta startStatusLine+2,x
 
 !return:
     jsr invertColors
@@ -681,14 +648,15 @@ printXxxLinesWritten:
 // ========================================
 
 xxxLinesRead: .text @"[XXX lines read]\$00"
+.const linesReadNumberOffset = 1
 
 printXxxLinesRead:
     jsr invertColors
     jsr clearStatLine
 
-    lda #5                                  // print sentence
+    lda #infoOffset                         // print sentence
     sta curPosX
-    lda #editorStatLineIndex
+    lda #statusLineY
     sta curPosY
     
     ldx #<xxxLinesRead
@@ -698,14 +666,14 @@ printXxxLinesRead:
     lda readLinesCounter
     jsr print8
 
-    ldx #6
+    ldx #infoOffset+linesReadNumberOffset
 !number:
     lda num8Digits+0
-    sta editorStartStatLine+0,x
+    sta startStatusLine+0,x
     lda num8Digits+1
-    sta editorStartStatLine+1,x
+    sta startStatusLine+1,x
     lda num8Digits+2
-    sta editorStartStatLine+2,x
+    sta startStatusLine+2,x
 
 !return:
     jsr invertColors
@@ -720,9 +688,9 @@ clearStatLine:
     ldx #0
 
 !loop:
-    sta editorStartStatLine,x
+    sta startStatusLine,x
     inx
-    cpx #screenWidth
+    cpx #statusLineWidth
     beq !return+
     jmp !loop-
 
@@ -735,8 +703,8 @@ clearStatLine:
 showEditMarker:
     jsr invertColors
     lda #charAsterisk
-    ldx #14
-    sta screenMemStart,x
+    ldx #editMarkerOffset
+    sta startHeader,x
     jsr invertColors
 !return:
     rts
@@ -746,8 +714,8 @@ showEditMarker:
 clearEditMarker:
     jsr invertColors
     lda #charSpace
-    ldx #14
-    sta screenMemStart,x
+    ldx #editMarkerOffset
+    sta startHeader,x
     jsr invertColors
 !return:
     rts
@@ -756,26 +724,33 @@ clearEditMarker:
 
 editorPrintableChar:
     ldx curPosX                             // don't leave screen
-    cpx #screenWidth - 1
+    cpx #screenWidth - 2
     beq !return+
-
-    lda currentPrintableChar
 
 !replaceSpace:
+    lda currentPrintableChar
     cmp #charSpace
-    bne !continue+
+    bne !shiftRightScreenMem+
     lda #charBulletOperator
-!continue:
-    jsr printChar
-    jsr storeCharInCache
+    sta currentPrintableChar
+
+!shiftRightScreenMem:
+    jsr shiftRightScreenMem
+
+!replaceBulletOperator:
+    lda currentPrintableChar
+    cmp #charBulletOperator
+    bne !shiftRightEditorCache+
+    lda #charSpace
+    sta currentPrintableChar
+
+!shiftRightEditorCache:
+    jsr shiftRightEditorCache
+
+!incrCursors:
     jsr incrCursor
-    inc currentLineCur
-    lda currentLineCur
-    ldx currentLine
-    cmp lineLengthCache,x
-    beq !return+
-    bcc !return+
-    sta lineLengthCache,x
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
 
 !return:
     rts
@@ -787,42 +762,49 @@ editorBackspace:
     cpx #editorStartX
     beq !return+
 
+!decreaseCursors:
     jsr decrCursor
-    dec currentLineCur
-    ldx currentLine
-    dec lineLengthCache,x
-    jsr backspaceShiftLeft
-    jsr copyLineToCache
+    lda #<editorCacheCursor
+    jsr decrZeropageAddr
+
+!shiftLeft:
+    jsr shiftLeftScreenMem
+    jsr shiftLeftEditorCache
+
 !return:
     rts
 
 // ========================================
+
+// TODO: handle scrolling at the end of editor
 
 editorEnter:
     ldx curPosX                             // don't leave screen
     cpx #screenWidth - 1
     beq !return+
 
-    lda #charPilcrowSign                    // print line feed symbol as end of line
-    jsr printChar
-    jsr storeCharInCache
-/*     inc currentLineCur
-    lda currentLineCur
-    ldx currentLine
-    sta lineLengthCache,x */
+    ldx curPosY                             // don't leave editor
+    cpx #screenHeight - footer1Height - footer2Height - vGapHeight - 1
+    beq !return+
 
+    jsr calcCurPos                          // allow only at end of line
+    ldy #0
+    lda (cursor),y
+    cmp #$00
+    bne !return+
+
+    lda #charPilcrowSign                    // print line feed symbol in screen ram
+    sta (cursor),y
+    lda #ctrlLineFeed                       // store line feed in editor cache
+    sta (editorCacheCursor),y
+
+!newLine:
     lda #editorStartX                       // new line
     sta curPosX
     inc curPosY
-    lda #screenHeight - editorFooterHeight
-    cmp curPosY
-    bne !continue+
-    jsr editorScrollUp
-    dec curPosY
-!continue:
-    inc currentLine
-    lda #0
-    sta currentLineCur
+    lda #<editorCacheCursor                 // increment editor cache cursor
+    jsr incrZeropageAddr
+
 !return:
     rts
 
@@ -830,18 +812,20 @@ editorEnter:
 
 editorCursorLeft:
 
-// Affects: X
-// Preserves: A, Y
+// Affects: A, X
+// Preserves: Y
 
 !cursorLeft:
-    dec curPosX                             // no advancing of start of line
     ldx curPosX
-    cpx #editorStartX-1
-    beq !noCursorLeft+
-    dec currentLineCur
-    jmp !return+
-!noCursorLeft:
-    inc curPosX
+    cpx #editorStartX                       // don't go beyond editor start
+    beq !return+
+
+    dec curPosX
+    lda #<editorCacheCursor
+    jsr decrZeropageAddr
+
+    // TODO: if start of line reached goto previous line
+
 !return:
     rts
 
@@ -849,16 +833,23 @@ editorCursorLeft:
 
 editorCursorRight:
 
-// Affects: A, X
-// Preserves: Y
+// Affects: A, Y
+// Preserves: X
 
 !cursorRight:
-    ldx currentLine                         // no advancing if end of line
-    lda lineLengthCache,x
-    cmp currentLineCur
-    beq !return+
+    jsr calcCurPos
+    ldy #0
+    lda (cursor),y                          // get char under current cursor
+    cmp #$00
+    beq !return+                            // if end of editor cache reached
+    cmp #charPilcrowSign
+    beq !return+                            // if end of line reached
+
     inc curPosX
-    inc currentLineCur
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
+
+    // TODO: if end of line reached goto next line
 
 !return:
     rts
@@ -870,18 +861,39 @@ editorCursorUp:
 // Affects: A, X
 // Preserves: Y
 
+!checkTopLimit:
+    lda curPosY
+    cmp #headerHeight + vGapHeight
+    beq !return+
+
 !cursorUp:
     dec curPosY
-    dec currentLine
-    ldx curPosY
-    cpx #editorHeaderHeight - 1
-    bne !continue+
-!noCursorUp:
-    inc curPosY
-    inc currentLine
-    jmp !return+
-!continue:
-    jsr verifyCursor
+    jsr editorCacheEndOfPreviousLine
+    jsr verifyCursor                        // Y contains offset
+    lda #<editorCacheCursor
+!loop:
+    cpy #0
+    beq !return+
+    jsr decrZeropageAddr                    // move editor cache cursor
+    dey                                     // to offeset in line
+    jmp !loop-
+!return:
+    rts
+
+// ========================================
+
+editorCacheEndOfPreviousLine:
+    ldy #0
+    lda #<editorCacheCursor
+    jsr decrZeropageAddr
+!loop:
+    lda (editorCacheCursor),y               // move editor cache cursor 
+    cmp #ctrlLineFeed                       // to previous line feed
+    beq !return+
+    lda #<editorCacheCursor
+    jsr decrZeropageAddr
+    jmp !loop-
+
 !return:
     rts
 
@@ -892,157 +904,166 @@ editorCursorDown:
 // Affects: A, X
 // Preserves: Y
 
-!hasCurrentLineFeed:
-    lda curPosX
-    pha
+!checkBottomLimit:
+    lda curPosY
+    cmp #headerHeight + vGapHeight + editorHeight - 1
+    beq !return+
 
-    ldx currentLine
-    lda lineLengthCache,x
-    clc
-    adc #editorStartX
-    sta curPosX
-    jsr getCharOnCurPos
-    tax
-    pla
-    sta curPosX
-    txa
+!checkLastLine:
+    jsr calcCurPos
+    ldy #0
+!loop:
+    lda (cursor),y
+    cmp #$00
+    beq !return+
     cmp #charPilcrowSign
-    bne !return+
+    beq !loopEnd+
+    beq !return+
+    lda #<cursor
+    jsr incrZeropageAddr
+    jmp !loop-
+!loopEnd:
 
 !cursorDown:
     inc curPosY
-    inc currentLine
-    ldx curPosY
-    cpx #editorHeight + editorHeaderHeight
-    bne !continue+
-!noCursorDown:
-    dec curPosY
-    dec currentLine
-    jmp !return+
-!continue:
-    jsr verifyCursor
+    jsr editorCacheEndOfNextLine
+    jsr verifyCursor                        // Y contains offset
+    lda #<editorCacheCursor
+!loop:
+    cpy #0
+    beq !return+
+    jsr decrZeropageAddr                    // move editor cache cursor
+    dey                                     // to offeset in line
+    jmp !loop-
 !return:
     rts
 
 // ========================================
+
+nextLineReached: .byte $00
+
+editorCacheEndOfNextLine:
+    lda #FALSE
+    sta nextLineReached
+!loop:
+    ldy #0
+    lda (editorCacheCursor),y
+    cmp #ctrlLineFeed                       // end of line reached
+    beq !currentLine+
+    cmp #$00                                // end of cache reached
+    beq !return+
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
+    jmp !loop-
+
+!currentLine:
+    lda nextLineReached
+    cmp #TRUE
+    beq !return+
+
+!nextLine:
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
+    lda #TRUE
+    sta nextLineReached
+    jmp !loop-
+
+!return:
+    rts
+
+// ========================================
+
+// Sets Cursor to End of Line or
+// returns horizontal Offset to Line End in Y
 
 verifyCursor:
-    lda currentLineCur                      // if new line is shorter, reset current line cursor to line length
-    ldx currentLine
-    cmp lineLengthCache,x
+    jsr calcCurPos
+
+    ldy #0
+    lda (cursor),y
+    cmp #$00                                // in empty space right of line end
+    beq !moveLeftToLineEnd+
+    cmp #charPilcrowSign                    // directly on line end
     beq !return+
-    bcc !return+
-    lda lineLengthCache,x
-    sta currentLineCur
-    clc
-    adc #editorStartX
-    sta curPosX
-!return:
-    rts
+    jmp !calcLineEndOffset+                 // in mid-line
 
-// ========================================
+!moveLeftToLineEnd:
 
-storeCharInCache:
-    pha
-
-    lda #<editorCache
-    sta destinationAddr
-    lda #>editorCache
-    sta destinationAddr+1
-
-    ldx #0
 !loop:
-    cpx currentLine
-    beq !store+
-    lda destinationAddr
-    clc
-    adc #editorWidth
-    sta destinationAddr
-    lda destinationAddr+1
-    adc #0
-    sta destinationAddr+1
-    inx
+    dec curPosX
+    jsr calcCurPos
+    lda curPosX
+    cmp #lineNumbersWidth + hGapWidth       // is next line an empty last line?
+    beq !return+
+    ldy #0
+    lda (cursor),y
+    cmp #$00                                // in empty space right of line end
+    beq !loop-
+    cmp #charPilcrowSign                    // directly on line end
+    beq !return+
+    inc curPosX                             // last line element
+    jmp !return+
+
+!calcLineEndOffset:
+    ldy #0
+!loop:
+    lda (cursor),y
+    cmp #$00
+    beq !return+
+    cmp #charPilcrowSign
+    beq !return+
+    iny
     jmp !loop-
 
-!store:
-    pla
-    ldy currentLineCur
-    sta (destinationAddr),y
-
-!return:
-    rts
-
-// ========================================
-
-clearLineLengthCache:
-    lda #$00
-    ldx #0
-!loop:
-    cpx #255
-    beq !return+
-    sta lineLengthCache,x
-    inx
-    jmp !loop-
 !return:
     rts
 
 // ========================================
 
 clearEditorCache:
-    lda #0
-    sta currentLine
+    jsr resetEditorCacheCursor
 
-!mainLoop:
-    lda currentLine
-    cmp #editorHeight
-    beq !return+
-    tax
-    lda lineLengthCache,x
-    cmp #0
-    bne !getLineStart+
-    inc currentLine
-    jmp !mainLoop-
-
-!getLineStart:
-    lda #<editorCache
-    sta destinationAddr
-    lda #>editorCache
-    sta destinationAddr+1
-
-    ldx #0
-!loop:
-    cpx currentLine
-    beq !loopEnd+
-    lda destinationAddr
-    clc
-    adc #editorWidth
-    sta destinationAddr
-    lda destinationAddr+1
-    adc #0
-    sta destinationAddr+1
-    inx
-    jmp !loop-
-!loopEnd:
-
-!clearLine:
     ldy #0
-    ldx currentLine
 !loop:
-    tya
-    cmp lineLengthCache,x
-    beq !loopEnd+
+    lda editorCacheCursor
+    cmp #<biosStart
+    beq !isEndReached+
+    jmp !continue+
+!isEndReached:
+    lda editorCacheCursor+1
+    cmp #>biosStart
+    beq !return+
+!continue:
+    lda (editorCacheCursor),y
+    cmp #$00
+    beq !return+                            // stop when cache wasn't used before
     lda #$00
-    sta (destinationAddr),y
-    iny
+    sta (editorCacheCursor),y               // clear editor cache with $00
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
     jmp !loop-
-!loopEnd:
 
-!incMainLoop:
-    inc currentLine
-    jmp !mainLoop-
+!return:
+    jsr resetEditorCacheCursor
+    rts
 
-!mainLoopEnd:
+// ========================================
 
+resetEditorCacheCursor:
+    lda #<editorCache
+    sta editorCacheCursor
+    lda #>editorCache
+    sta editorCacheCursor+1
+!return:
+    rts
+
+// ========================================
+
+resetEditorCursor:
+    lda #editorStartX
+    sta curPosX
+    lda #editorStartY
+    sta curPosY
 !return:
     rts
 
@@ -1052,12 +1073,12 @@ printHeader:
     jsr invertColors
 
 !fillHeader:
-    lda #charSpace                         // fill headline with whitespace
+    lda #charSpace                         // fill header with whitespace
     ldx #0
 !loop:
-    cpx #screenWidth
+    cpx #headerWidth
     beq !printHeader+
-    sta editorStartHeader,x
+    sta startHeader,x
     inx
     jmp !loop-
 
@@ -1067,7 +1088,7 @@ printHeader:
     lda header,x
     cmp #$00
     beq !return+
-    sta editorStartHeader,x
+    sta startHeader,x
     inx
     jmp !loop-
 
@@ -1091,9 +1112,9 @@ printFooter:
 !dontInvertColors:
     cmp #$00
     beq !return+
-    sta editorStartFooter1,x
-    lda footer2,x
-    sta editorStartFooter2,x
+    sta startFooter1,x 
+    lda footer2,x                           // footer 1 & 2 are aligned
+    sta startFooter2,x                      // that's why no check for '~' happens
     inx
     jmp !loop-
 !return:
@@ -1101,27 +1122,26 @@ printFooter:
 
 // ========================================
 
-// X: start line number
+// Params:
+//   A: start line number
 
 currentNumberToPrint: .byte $00
-maxNumberToPrint: .byte $00
 
 printLineNumbers:
-    sta currentNumberToPrint
     clc
-    adc #editorHeight
-    sta maxNumberToPrint
+    adc #1                                  // line numbers start at 1 and not 0
+    sta currentNumberToPrint
 
-    lda #0
-    sta curPosX
-    lda #editorStartY
-    sta curPosY
+    ldx #lineNumbersStartX
+    stx curPosX
+    ldy #lineNumbersStartY
+    sty curPosY
 
     jsr invertColors
 
 !loop:
     lda currentNumberToPrint
-    cmp maxNumberToPrint
+    cmp #lineNumbersHeight+1
     beq !return+
     jsr print8
 
@@ -1135,7 +1155,7 @@ printLineNumbers:
     lda num8Digits+2
     jsr printChar
     inc curPosY
-    lda #0
+    lda #lineNumbersStartX
     sta curPosX
 
     inc currentNumberToPrint
@@ -1169,156 +1189,244 @@ editorScrollUp:
 
 // ========================================
 
-tmpBackspaceShiftLeftIterator: .byte $00
-tmpBackspaceShiftLeftMaxIterator: .byte $00
-tmpBackspaceShiftLeftChar: .byte $00
-// Affects: A
-// Preserves: XY
-
-backspaceShiftLeft:
-    jsr calcCurPos
-    lda #0
-    sta tmpBackspaceShiftLeftIterator
-
-    lda #editorWidth
-    sec
-    sbc currentLineCur
-    sta tmpBackspaceShiftLeftMaxIterator
-
-!loop:
-    lda tmpBackspaceShiftLeftIterator
-    cmp tmpBackspaceShiftLeftMaxIterator
-    beq !return+
-    lda #1
-    clc
-    adc tmpBackspaceShiftLeftIterator
-    tay
-    lda (tmpCursor),y
-    sta tmpBackspaceShiftLeftChar
-    lda #0
-    clc
-    adc tmpBackspaceShiftLeftIterator
-    tay
-    lda tmpBackspaceShiftLeftChar
-    sta (tmpCursor),y
-    inc tmpBackspaceShiftLeftIterator
-    jmp !loop-
-!eraseLastChar:
-
-!return:
-    rts
-
-// ========================================
-
-copyLineToCache:
-!setSourceAddr:
-    lda curPosX                             // set source address to start of line in screen mem
-    pha
-    lda #editorStartX
-    sta curPosX 
-    jsr calcCurPos
-    lda tmpCursor
-    sta sourceAddr
-    lda tmpCursor+1
-    sta sourceAddr+1
-    pla
-    sta curPosX
-!setDestAddr:
-    lda #<editorCache                       // set destination address to start of line in editor cache
-    sta destinationAddr
-    lda #>editorCache
-    sta destinationAddr+1
-    ldx #0
-!loop:
-    cpx currentLine
-    beq !copy+
-    lda destinationAddr
-    clc
-    adc #editorWidth
-    sta destinationAddr
-    lda destinationAddr+1
-    adc #0
-    sta destinationAddr+1
-    inx
-    jmp !loop-
-
-!copy:
-    ldy #0
-!loop:
-    cpy #editorWidth
-    beq !return+
-    lda (sourceAddr),y
-    sta (destinationAddr),y
-    iny
-    jmp !loop-
-
-!return:
-    rts
-
-// ========================================
-
-copyEditorCacheToLine:
-!setSourceAddr:
-    lda #<editorCache                       // set source address to start of line in editor cache
-    sta sourceAddr
-    lda #>editorCache
-    sta sourceAddr+1
-
-    ldx #0
-!loop:
-    cpx currentLine
-    beq !loopEnd+
-    lda sourceAddr
-    clc
-    adc #editorWidth
-    sta sourceAddr
-    lda sourceAddr+1
-    adc #0
-    sta sourceAddr+1
-    inx
-    jmp !loop-
-!loopEnd:
-
-!setDestAddr:
-    lda curPosX                             // set destination address to start of line in screen mem
+shiftLeftScreenMem:
+    lda curPosX
     pha
     lda curPosY
     pha
-    lda #editorStartX
-    sta curPosX 
-    lda #editorStartY
-    sta curPosY
 
-    ldx #0
 !loop:
-    cpx currentLine
-    beq !loopEnd+
-    inc curPosY
-    inx
-    jmp !loop-
-!loopEnd:
-
     jsr calcCurPos
-    lda tmpCursor
-    sta destinationAddr
-    lda tmpCursor+1
-    sta destinationAddr+1
+
+    ldy #1
+    lda (cursor),y
+    cmp #$00                                // end of editor cache reached?
+    beq !clearLastChar+
+
+    ldy #0
+    sta (cursor),y                       // shift left in screen mem
+
+    jsr incrCursor
+    jmp !loop-
+
+!clearLastChar:
+    ldy #0
+    lda #$00
+    sta (cursor),y
+
+!return:
     pla
     sta curPosY
     pla
     sta curPosX
+    rts
+
+// ========================================
+
+shiftLeftEditorCache:
+    lda editorCacheCursor
+    pha
+    lda editorCacheCursor+1
+    pha
+
+!loop:
+
+    ldy #1
+    lda (editorCacheCursor),y
+    cmp #$00                                // end of editor cache reached?
+    beq !clearLastChar+
+
+    ldy #0
+    sta (editorCacheCursor),y               // shift left in editor cache
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
+    jmp !loop-
+
+!clearLastChar:
+    ldy #0
+    lda #$00
+    sta (editorCacheCursor),y
+
+!return:
+    pla
+    sta editorCacheCursor+1
+    pla 
+    sta editorCacheCursor
+    rts
+
+// ========================================
+
+newChar: .byte $00
+nextChar: .byte $00
+
+// TODO: shifts beyond end of line if cursor is mid-line
+
+shiftRightScreenMem:
+    sta newChar
+
+    lda curPosX
+    pha
+    lda curPosY
+    pha
+
+!loop:
+    jsr calcCurPos
+    lda newChar
+    cmp #$00                                // end of editor cache reached?
+    beq !storeLastChar+
+
+!fourStepsShift:
+    ldy #1
+    lda (cursor),y
+    sta nextChar                            // store next char in nextChar
+
+    ldy #0
+    lda (cursor),y                          // get char under cursor
+
+    ldy #1
+    sta (cursor),y                          // shift right in screen mem
+
+    lda newChar
+    ldy #0
+    sta (cursor),y                          // store newChar in screen ram
+
+    lda nextChar
+    sta newChar                             // copy nextChar to newChar
+
+!incrementCursors:                          // two times
+    jsr incrCursor
+    jsr incrCursor
+    jmp !loop-
+
+!storeLastChar:
+    ldy #0
+    lda newChar
+    sta (cursor),y
+
+!return:
+    pla
+    sta curPosY
+    pla
+    sta curPosX
+    rts
+
+// ========================================
+
+shiftRightEditorCache:
+    sta newChar
+
+    lda editorCacheCursor
+    pha
+    lda editorCacheCursor+1
+    pha
+
+!loop:
+    lda newChar
+    cmp #$00                                // end of editor cache reached?
+    beq !storeLastChar+
+
+!fourStepsShift:
+    ldy #1
+    lda (editorCacheCursor),y
+    sta nextChar                            // store next char in nextChar
+
+    ldy #0
+    lda (editorCacheCursor),y               // get char under cursor
+
+    ldy #1
+    sta (editorCacheCursor),y               // shift right in editor cache
+
+    lda newChar
+    ldy #0
+    sta (editorCacheCursor),y               // store newChar in editor cache
+
+    lda nextChar
+    sta newChar                             // copy nextChar to newChar
+
+!incrementCursors:                          // two times
+    lda #<editorCacheCursor
+    jsr incrZeropageAddr
+    jsr incrZeropageAddr
+    jmp !loop-
+
+!storeLastChar:
+    ldy #0
+    lda newChar
+    sta (editorCacheCursor),y
+
+!return:
+    pla
+    sta editorCacheCursor+1
+    pla 
+    sta editorCacheCursor
+    rts
+
+// ========================================
+
+insertLineFeedCounter: .byte $00
+
+copyEditorCacheToScreenMem:
+    lda #0
+    sta insertLineFeedCounter
+
+!setSourceAddr:
+    lda #<editorCache                       // set source address to start of editor cache
+    sta sourceAddr
+    lda #>editorCache
+    sta sourceAddr+1
+
+!setDestAddr:
+    lda #<startEditor                       // set destination address to start of editor screen mem
+    sta destinationAddr
+    lda #>startEditor
+    sta destinationAddr+1
 
 !copy:
-    ldx currentLine                         // copy editor cache to line
     ldy #0
 !loop:
-    tya
-    cmp lineLengthCache,x
-    beq !return+
     lda (sourceAddr),y
+    cmp #$00
+    beq !return+
+    cmp #ctrlLineFeed
+    beq !lineFeed+
+    cmp #charSpace
+    beq !space+
     sta (destinationAddr),y
-    iny
+    lda #<destinationAddr
+    jsr incrZeropageAddr
+!continue:
+    lda #<sourceAddr
+    jsr incrZeropageAddr
     jmp !loop-
+
+!lineFeed:
+    lda #charPilcrowSign
+    sta (destinationAddr),y
+
+    inc insertLineFeedCounter
+
+    jsr resetEditorCursor
+    lda curPosY
+    clc
+    adc insertLineFeedCounter
+    sta curPosY
+    jsr calcCurPos
+
+    lda cursor                                  // set destination address to start of next line in screen mem
+    sta destinationAddr
+    lda cursor+1
+    sta destinationAddr+1
+
+    jmp !continue-
+
+!space:
+    lda #charBulletOperator
+    sta (destinationAddr),y
+
+    lda #<destinationAddr
+    jsr incrZeropageAddr
+
+    jmp !continue-
 
 !return:
     rts

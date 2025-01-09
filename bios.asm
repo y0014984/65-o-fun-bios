@@ -9,13 +9,28 @@
 
 // ========================================
 
+.segmentdef ZeroPage [start=$00, virtual]
+.segmentdef Stack [start=$0100, virtual]
 .segmentdef Registers [start=$0200, virtual]
 .segmentdef Buffers [start=$0300, virtual]
+.segmentdef ScreenMem [start=screenMemStart, virtual]
 .segmentdef BIOS [start=biosStart, outPrg="bios.prg"]
 
 // ========================================
 
-.segment Registers                          // reserved 256 bytes
+.segment ZeroPage
+
+.fill 256, $00
+
+// ========================================
+
+.segment Stack
+
+.fill 256, $00
+
+// ========================================
+
+.segment Registers
 
 .fill 256, $00
 
@@ -24,6 +39,12 @@
 .segment Buffers
 
 .fill 256, $00
+
+// ========================================
+
+.segment ScreenMem
+
+.fill screenWidth*screenHeight, $00
 
 // ========================================
 
@@ -118,4 +139,3 @@ brkRoutineVector:
     .word irqStart                          // IRQB
 
 // ========================================
-    

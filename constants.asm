@@ -4,12 +4,25 @@
 
 // ========================================
 
+.const FALSE                = $00
+.const TRUE                 = $FF
+
+// ========================================
+
 .const screenWidth          = 40            // 40 chars width * 8 = 320px
 .const screenHeight         = 30            // 30 chars height * 8 = 240px
 
 // ========================================
 
-.const charLineFeed         = $0A
+// ASCII control characters
+.const ctrlBackspace        = $08
+.const ctrlLineFeed         = $0A
+.const ctrlArrowLeft        = $11           // reassignment of device control 1
+.const ctrlArrowRight       = $12           // reassignment of device control 2
+.const ctrlArrowUp          = $13           // reassignment of device control 3
+.const ctrlArrowDown        = $14           // reassignment of device control 4
+
+// Codepage 437 printable characters
 .const charPilcrowSign      = $14           // used as line feed replacement in 'bono'
 .const charSpace            = $20
 .const charAsterisk         = $2A           // used as edit marker in 'bono'
