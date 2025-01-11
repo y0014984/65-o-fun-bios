@@ -234,6 +234,7 @@ mkdir: .text @"mkdir\$00"
 pwd: .text @"pwd\$00"
 rm: .text @"rm\$00"
 rmdir: .text @"rmdir\$00"
+run: .text @"run\$00"
 touch: .text @"touch\$00"
 uname: .text @"uname\$00"
 
@@ -451,12 +452,30 @@ processInpBuf:
     stx curPosX
     jsr getCharOnCurPos
     cmp bono,Y
-    bne !clear+
+    bne !run+
     inx
     iny
     jmp !loop-
 !jsrBono:
     jsr bonoCommand
+    jmp !return+
+
+!run:
+    ldx #1                                  // the current input buffer is in line curPosY after
+    ldy #0                                  // the prompt and has the length inpBufLen
+!loop:
+    lda run,Y
+    cmp #$00
+    beq !jsrRun+
+    stx curPosX
+    jsr getCharOnCurPos
+    cmp run,Y
+    bne !clear+
+    inx
+    iny
+    jmp !loop-
+!jsrRun:
+    jsr runCommand
     jmp !return+
 
 !clear:
