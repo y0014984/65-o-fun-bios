@@ -287,6 +287,46 @@ isFile:
 
 // ========================================
 
+isProgram:
+    lda #'I'
+    sta commandBuffer
+    lda #'S'
+    sta commandBuffer+1
+    lda #'P'
+    sta commandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
+getLoadAddress:
+    lda #'G'
+    sta commandBuffer
+    lda #'L'
+    sta commandBuffer+1
+    lda #'A'
+    sta commandBuffer+2
+
+    lda #commandFlowReady
+    sta storageComFlow
+
+    jsr waitForStorageResult
+
+    lda storageComRetVal
+
+!return:
+    rts
+
+// ========================================
+
 saveFileContent:
     lda #'S'
     sta commandBuffer

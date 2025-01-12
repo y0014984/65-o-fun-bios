@@ -726,11 +726,140 @@ bonoCommand:
 
 // ========================================
 
+loadAddress: .word $0000
+loadAddressCursor: .word $0000
+
 runCommand:
-    jsr $1000
+
+!loadProgram:
+    jsr copyRunCommandParameter
+    jsr existsFilesystemObject
+    cmp #TRUE
+    beq !fsObjectExists+
+    jmp !noFilesystemObject+
+
+!fsObjectExists:
+    jsr copyRunCommandParameter
+    jsr isProgram
+    cmp #TRUE
+    beq !getLoadAddress+
+    jsr printError
+    jmp !return+
+
+!noFilesystemObject:
+    jsr printError
+    jmp !return+
+
+!printError:
+    lda storageComLastErr
+    jsr printError
+
+!getLoadAddress:
+    jsr copyRunCommandParameter
+    jsr getLoadAddress
+    cmp #TRUE
+    beq !programExists+
+    lda #errCodeNotProgram
+    jsr editorPrintError
+    jmp !return+
+
+!programExists:
+    lda readWriteBuffer
+    sta loadAddress
+    sta loadAddressCursor
+    lda readWriteBuffer+1
+    sta loadAddress+1
+    sta loadAddressCursor+1
+!loop:
+    jsr copyRunCommandParameter
+    jsr readFileContent
+    jsr copyReadWriteBufferToMemory
+
+    lda readWriteBuffer
+    cmp #TRUE
+    beq !setLoadAddress+
+    cmp #FALSE
+    beq !printError-
+    jmp !loop-                              // otherwise status is $80 which means not end of file
+
+!setLoadAddress:                            // self modifying code to set load address for jsr
+    lda loadAddress
+    sta usedLoadAddress+1
+    lda loadAddress+1
+    sta usedLoadAddress+2
+usedLoadAddress:
+    jsr $0000
     jsr initTerminal
-    
+
 !return:
+    rts
+
+// ========================================
+
+copyRunCommandParameter:
+    lda inpBufLen                           // INP_BUF_LEN - 5 = length of parameter to print
+    cmp #5
+    bcc !return+                            // A<5 = no parameter
+    sec
+    sbc #4
+    sta paramLength
+
+    ldx #5                                  // copy start of parameter to source address
+    stx curPosX
+    jsr calcCurPos
+    lda cursor
+    sta sourceAddr
+    lda cursor+1
+    sta sourceAddr+1
+                    
+    lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
+    sta destinationAddr
+    lda #>commandBuffer+3
+    sta destinationAddr+1
+
+    ldy #0                                  // copy parameter to buffer until a $00 is reached
+!loop:
+    cpy paramLength
+    beq !return+
+    lda (sourceAddr),Y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+
+!return:
+    rts
+
+// ========================================
+
+copyReadWriteBufferToMemory:
+    lda #<readWriteBuffer+2                 // copy R/W buffer + 2 to source address
+    sta sourceAddr
+    lda #>readWriteBuffer+2
+    sta sourceAddr+1
+
+    lda loadAddressCursor                   // copy load address destination address
+    sta destinationAddr
+    lda loadAddressCursor+1
+    sta destinationAddr+1
+
+    ldy #0                                  // copy buffer to destination address
+!loop:
+    cpy readWriteBuffer+1                   // readWriteBuffer + 1 stores the line length
+    beq !return+
+    lda (sourceAddr),y
+    sta (destinationAddr),y
+    iny
+    jmp !loop-
+
+!return:
+    lda loadAddressCursor                   // load address is increaased by buffer size for next run
+    clc
+    adc readWriteBuffer+1
+    sta loadAddressCursor
+    lda loadAddressCursor+1
+    adc #0
+    sta loadAddressCursor+1
+    
     rts
 
 // ========================================

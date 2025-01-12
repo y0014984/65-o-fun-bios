@@ -49,5 +49,6 @@
 .const errCodeFileExists    = $83
 .const errCodeDirNotEmpty   = $E1
 .const errCodeUnknownCom    = $99
+.const errCodeNotProgram    = $8D
 
 // ========================================
