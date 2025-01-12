@@ -728,7 +728,8 @@ bonoCommand:
 
 runCommand:
     jsr $1000
-
+    jsr initTerminal
+    
 !return:
     rts
 
