@@ -620,7 +620,7 @@ readKeyboard:                               // check all bits of $0200 - $0209 (
     lda #$08                                // ASCII BACKSPACE
     jmp !continueReadKeyboard+
 !Escape:
-    lda #$00
+    lda #$1B                                // ASCII ESCAPE
     jmp !continueReadKeyboard+
 
 !Backslash:
