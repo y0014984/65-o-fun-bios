@@ -122,3 +122,156 @@ testStorage:
     rts
 
 // ========================================
+
+testColorTableColorMode4:
+    // Values in RGBA
+    .byte 255, 0, 0, 255                    // color 0 (red)
+    .byte 0, 255, 0, 255                    // color 1 (green)
+    .byte 0, 0, 255, 255                    // color 2 (blue)
+    .byte 80, 80, 80, 255                   // color 3 (grey)
+
+testTileSetTileMode8ColorMode4:
+    .for (var y = 0; y < 8; y++) {
+        .byte %00011011                     // red, green, blue, grey
+        .byte %00011011                     // red, green, blue, grey
+    }
+    .for (var y = 0; y < 8; y++) {
+        .byte %00000000                     // red, red, red, red
+        .byte %11111111                     // grey, grey, grey, grey
+    }
+    .for (var y = 0; y < 8; y++) {
+        .byte %01010101                     // green, green, green, green
+        .byte %10101010                     // blue, blue, blue, blue
+    }
+    .for (var y = 0; y < 8; y++) {
+        .byte %11001100                     // grey, red, grey, red
+        .byte %11001100                     // grey, red, grey, red
+    }
+
+testTileSetTileMode16ColorMode4:
+    .for (var y = 0; y < 16; y++) {
+        .byte %00011011                     // red, green, blue, grey
+        .byte %00011011                     // red, green, blue, grey
+        .byte %00000000                     // red, red, red, red
+        .byte %11111111                     // grey, grey, grey, grey
+    }
+    .for (var y = 0; y < 16; y++) {
+        .byte %00000000                     // red, red, red, red
+        .byte %11111111                     // grey, grey, grey, grey
+        .byte %01010101                     // green, green, green, green
+        .byte %10101010                     // blue, blue, blue, blue
+    }
+    .for (var y = 0; y < 16; y++) {
+        .byte %01010101                     // green, green, green, green
+        .byte %10101010                     // blue, blue, blue, blue
+        .byte %11001100                     // grey, red, grey, red
+        .byte %11001100                     // grey, red, grey, red
+    }
+    .for (var y = 0; y < 16; y++) {
+        .byte %11001100                     // grey, red, grey, red
+        .byte %11001100                     // grey, red, grey, red
+        .byte %00011011                     // red, green, blue, grey
+        .byte %00011011                     // red, green, blue, grey
+    }
+
+testColorMode:
+    lda #colMode4
+    sta colorMode
+
+    lda #<testColorTableColorMode4
+    sta colorTableAddr
+    lda #>testColorTableColorMode4
+    sta colorTableAddr+1
+
+    lda #tileMode8 | (tileOrientLeftRight << 7)
+    sta tileModeOrientation
+
+    lda #screenWidth
+    sta tileMapWidth
+
+    lda #screenHeight
+    sta tileMapHeight
+
+    lda #<screenMemStart
+    sta tileMapAddr
+    lda #>screenMemStart
+    sta tileMapAddr+1
+
+    lda #<testTileSetTileMode8ColorMode4
+    sta tileSetAddr
+    lda #>testTileSetTileMode8ColorMode4
+    sta tileSetAddr+1
+    
+    lda #4
+    sta tileSetLength
+
+    // --------------------
+
+    lda #0                                  // 1st line at pos 1,3,5 and 7
+    sta screenMemStart + 1
+    lda #1
+    sta screenMemStart + 3
+    lda #2
+    sta screenMemStart + 5
+    lda #3
+    sta screenMemStart + 7
+
+    lda #0                                  // 2nd line at pos 2,4,6 and 8 (because of offset 1)
+    sta screenMemStart + screenWidth + 1 + 1
+    lda #1
+    sta screenMemStart + screenWidth + 1 + 3
+    lda #2
+    sta screenMemStart + screenWidth + 1 + 5
+    lda #3
+    sta screenMemStart + screenWidth + 1 + 7
+
+    // --------------------
+
+!loop:
+    jsr getCharFromBuf
+    cmp #$00                                // no input
+    beq !loop-
+
+    // --------------------
+
+    lda #tileMode16 | (tileOrientLeftRight << 7)
+    sta tileModeOrientation
+
+    lda #<testTileSetTileMode16ColorMode4
+    sta tileSetAddr
+    lda #>testTileSetTileMode16ColorMode4
+    sta tileSetAddr+1
+
+    // --------------------
+
+    lda #0                                  // 1st line at pos 1,3,5 and 7
+    sta screenMemStart + 1
+    lda #1
+    sta screenMemStart + 3
+    lda #2
+    sta screenMemStart + 5
+    lda #3
+    sta screenMemStart + 7
+
+    lda #0                                  // 2nd line at pos 2,4,6 and 8 (because of offset 1)
+    sta screenMemStart + screenWidth + 1 + 1
+    lda #1
+    sta screenMemStart + screenWidth + 1 + 3
+    lda #2
+    sta screenMemStart + screenWidth + 1 + 5
+    lda #3
+    sta screenMemStart + screenWidth + 1 + 7
+
+    // --------------------
+
+!loop:
+    jsr getCharFromBuf
+    cmp #$00                                // no input
+    beq !loop-
+
+    // --------------------
+
+!return:
+    rts
+
+// ========================================

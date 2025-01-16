@@ -32,7 +32,57 @@ welcomeMessageLine3: .text @"type 'help' for command list\$00"
 
 // ========================================
 
+colorTable1:
+    // Values in RGBA
+    .byte 0, 0, 0, 255                      // color 0 (black)
+    .byte 255, 255, 255, 255                // color 1 (white)
+
+colorTable2:
+    // Values in RGBA
+    .byte 255, 255, 255, 255                // color 0 (white)
+    .byte 0, 0, 0, 255                      // color 1 (black)
+
+// ========================================
+
+initGraphics:
+    lda #colMode2
+    sta colorMode
+
+    lda #<colorTable1
+    sta colorTableAddr
+    lda #>colorTable1
+    sta colorTableAddr+1
+
+    lda #tileMode8 | (tileOrientLeftRight << 7)
+    sta tileModeOrientation
+
+    lda #screenWidth
+    sta tileMapWidth
+
+    lda #screenHeight
+    sta tileMapHeight
+
+    lda #<screenMemStart
+    sta tileMapAddr
+    lda #>screenMemStart
+    sta tileMapAddr+1
+
+    lda #<fontStart
+    sta tileSetAddr
+    lda #>fontStart
+    sta tileSetAddr+1
+    
+    lda #255
+    sta tileSetLength
+
+!return:
+    rts
+    
+// ========================================
+
 initTerminal:
+    jsr initGraphics
+
     lda #charSpace
     jsr fillScreen
 

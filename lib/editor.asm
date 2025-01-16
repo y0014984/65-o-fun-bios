@@ -700,23 +700,37 @@ clearStatLine:
 
 // ========================================
 
+isEditMarkerVisible: .byte FALSE
+
 showEditMarker:
+    lda isEditMarkerVisible
+    cmp #TRUE
+    beq !return+
+
     jsr invertColors
     lda #charAsterisk
     ldx #editMarkerOffset
     sta startHeader,x
     jsr invertColors
+    lda #TRUE
+    sta isEditMarkerVisible
 !return:
     rts
 
 // ========================================
 
 clearEditMarker:
+    lda isEditMarkerVisible
+    cmp #FALSE
+    beq !return+
+
     jsr invertColors
     lda #charSpace
     ldx #editMarkerOffset
     sta startHeader,x
     jsr invertColors
+    lda #FALSE
+    sta isEditMarkerVisible
 !return:
     rts
 
@@ -1173,11 +1187,29 @@ editorReturn:
 
 // ========================================
 
-invertColors:
-    ldx foregroundColor                     // invert foreground and background color
-    ldy backgroundColor
-    sty foregroundColor
-    stx backgroundColor
+isColorInverted: .byte FALSE
+
+invertColors:                               // invert first two colors by switching color palette
+    ldx isColorInverted
+    cpx #TRUE
+    beq !isTrue+
+!isFalse:
+    ldx #<colorTable2
+    stx colorTableAddr
+    ldx #>colorTable2
+    stx colorTableAddr+1
+    ldx #TRUE
+    stx isColorInverted
+    jmp !return+
+!isTrue:
+    ldx #<colorTable1
+    stx colorTableAddr
+    ldx #>colorTable1
+    stx colorTableAddr+1
+    ldx #FALSE
+    stx isColorInverted
+
+!return:
     rts
 
 // ========================================
