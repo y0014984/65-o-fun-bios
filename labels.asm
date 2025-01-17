@@ -22,11 +22,6 @@
 
 // ========================================
 
-.label foregroundColor      = $020A
-.label backgroundColor      = $020B
-
-// ========================================
-
 .label dateTimeYear         = $020C         // WORD $020C + $020D
 .label dateTimeWeekdayMonth = $020E
 .label dateTimeDay          = $020F
@@ -43,5 +38,16 @@
 .label storageComRetVal     = $021D
 .label storageComLastErr    = $021E
 .label storageComFlow       = $021F
+
+// ========================================
+
+.label colorMode            = $0227
+.label colorTableAddr       = $0228         // WORD $0228 + $0229
+.label tileModeOrientation  = $022A
+.label tileMapWidth         = $022B
+.label tileMapHeight        = $022C
+.label tileMapAddr          = $022D         // WORD $022D + $022E
+.label tileSetAddr          = $022F         // WORD $022F + §0230
+.label tileSetLength        = $0231
 
 // ========================================

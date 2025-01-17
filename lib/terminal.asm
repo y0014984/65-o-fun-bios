@@ -10,6 +10,10 @@
 
 // ========================================
 
+.namespace terminal {
+
+// ========================================
+
 .label pointer              = $FC           // WORD $FC + $FD = used by PRINT_STRING
 .label cursor               = $FE           // WORD $FE + $FF = current pos in screen mem
 
@@ -22,7 +26,7 @@
 
 // ========================================
 
-terminalOutputBuffer: .fill screenWidth - 1, $00
+outputBuffer: .fill screenWidth - 1, $00
 
 // ========================================
 
@@ -32,7 +36,57 @@ welcomeMessageLine3: .text @"type 'help' for command list\$00"
 
 // ========================================
 
-initTerminal:
+colorTable1:
+    // Values in RGBA
+    .byte 0, 0, 0, 255                      // color 0 (black)
+    .byte 255, 255, 255, 255                // color 1 (white)
+
+colorTable2:
+    // Values in RGBA
+    .byte 255, 255, 255, 255                // color 0 (white)
+    .byte 0, 0, 0, 255                      // color 1 (black)
+
+// ========================================
+
+initGraphics:
+    lda #colMode2
+    sta colorMode
+
+    lda #<colorTable1
+    sta colorTableAddr
+    lda #>colorTable1
+    sta colorTableAddr+1
+
+    lda #tileMode8 | (tileOrientLeftRight << 7)
+    sta tileModeOrientation
+
+    lda #screenWidth
+    sta tileMapWidth
+
+    lda #screenHeight
+    sta tileMapHeight
+
+    lda #<screenMemStart
+    sta tileMapAddr
+    lda #>screenMemStart
+    sta tileMapAddr+1
+
+    lda #<fontStart
+    sta tileSetAddr
+    lda #>fontStart
+    sta tileSetAddr+1
+    
+    lda #255
+    sta tileSetLength
+
+!return:
+    rts
+    
+// ========================================
+
+init:
+    jsr initGraphics
+
     lda #charSpace
     jsr fillScreen
 
@@ -70,8 +124,8 @@ initTerminal:
 
 // ========================================
 
-terminalStart:
-    jsr initTerminal
+start:
+    jsr init
 
 !loop:
     lda #charGreaterThan                   // prompt
@@ -211,7 +265,7 @@ resetInpBuf:
     sta inpBufCur
     ldx #0
 !loop:
-    sta terminalOutputBuffer,x
+    sta outputBuffer,x
     inx
     cpx #screenWidth - 1
     bne !loop-
@@ -499,7 +553,7 @@ processInpBuf:
 !commandNotFound:
     ldx #<commandNotFound
     ldy #>commandNotFound
-    jsr printTerminalLine
+    jsr printLine
 
 !return:
     rts
@@ -608,7 +662,7 @@ newTerminalLine:
 
 // X and Y contain low byte and high byte of the zero terminated string
 
-printTerminalLine:
+printLine:
     jsr newTerminalLine
     jsr printString
 !return:
@@ -692,7 +746,7 @@ printError:
     ldy #>errorUnknown
 
 !printError:
-    jsr printTerminalLine
+    jsr printLine
 
 !return:
     rts
@@ -847,5 +901,9 @@ fillScreen:
     bne !loop-
 !return:
     rts
+
+// ======================================== */
+
+} // end of Namespace
 
 // ======================================== */

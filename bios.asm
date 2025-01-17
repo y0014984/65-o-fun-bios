@@ -1,5 +1,9 @@
 // Kick Assembler v5.25
 
+// ========================================
+
+#define DEBUG
+
 .encoding "ascii"
 
 // ========================================
@@ -56,11 +60,17 @@
 
 // ========================================
 
-    //jsr testScreen
+    #if !DEBUG
+
     //jsr testFontWrite
     //jsr testStorage
+    jsr testColorMode
 
-    jmp terminalStart
+    #endif
+
+// ========================================
+
+    jmp terminal.start
 
 // ========================================
 
@@ -68,9 +78,9 @@
 #import "lib/keyboard.asm"
 #import "lib/terminal.asm"
 #import "lib/storage.asm"
-#import "lib/test.asm"
 #import "lib/util.asm"
 #import "lib/editor.asm"
+#importif !DEBUG "lib/test.asm"
 
 // ========================================
 

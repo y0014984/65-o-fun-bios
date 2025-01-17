@@ -101,7 +101,7 @@ editorStart:
     jsr initEditorVariables
 
     lda #$00
-    jsr fillScreen
+    jsr terminal.fillScreen
 
     jsr printHeader
     jsr printFooter
@@ -181,60 +181,60 @@ editorStart:
 
 !printCursor:
     lda #charFullBlock
-    jsr printChar
+    jsr terminal.printChar
     jmp !editorLoop-
 
 !printableChar:
-    lda cursorChar
-    jsr printChar
+    lda terminal.cursorChar
+    jsr terminal.printChar
     jsr editorPrintableChar
-    jsr getCharOnCurPos
-    sta cursorChar
+    jsr terminal.getCharOnCurPos
+    sta terminal.cursorChar
     jsr showEditMarker
     jmp !printCursor-
 !backspace:
-    lda cursorChar
-    jsr printChar
+    lda terminal.cursorChar
+    jsr terminal.printChar
     jsr editorBackspace
-    jsr getCharOnCurPos
-    sta cursorChar
+    jsr terminal.getCharOnCurPos
+    sta terminal.cursorChar
     jsr showEditMarker
     jmp !printCursor-
 !enter:
-    lda cursorChar
-    jsr printChar
+    lda terminal.cursorChar
+    jsr terminal.printChar
     jsr editorEnter
-    jsr getCharOnCurPos
-    sta cursorChar
+    jsr terminal.getCharOnCurPos
+    sta terminal.cursorChar
     jsr showEditMarker
     jmp !printCursor-
 !arrowLeft:
-    lda cursorChar
-    jsr printChar
+    lda terminal.cursorChar
+    jsr terminal.printChar
     jsr editorCursorLeft
-    jsr getCharOnCurPos
-    sta cursorChar
+    jsr terminal.getCharOnCurPos
+    sta terminal.cursorChar
     jmp !printCursor-
 !arrowRight:
-    lda cursorChar
-    jsr printChar
+    lda terminal.cursorChar
+    jsr terminal.printChar
     jsr editorCursorRight
-    jsr getCharOnCurPos
-    sta cursorChar
+    jsr terminal.getCharOnCurPos
+    sta terminal.cursorChar
     jmp !printCursor-
 !arrowUp:
-    lda cursorChar
-    jsr printChar
+    lda terminal.cursorChar
+    jsr terminal.printChar
     jsr editorCursorUp
-    jsr getCharOnCurPos
-    sta cursorChar
+    jsr terminal.getCharOnCurPos
+    sta terminal.cursorChar
     jmp !printCursor-
 !arrowDown:
-    lda cursorChar
-    jsr printChar
+    lda terminal.cursorChar
+    jsr terminal.printChar
     jsr editorCursorDown
-    jsr getCharOnCurPos
-    sta cursorChar
+    jsr terminal.getCharOnCurPos
+    sta terminal.cursorChar
     jmp !printCursor-
 
 // ========================================
@@ -243,7 +243,7 @@ initEditorVariables:
     jsr resetEditorCacheCursor
 
     lda #$00
-    sta cursorChar
+    sta terminal.cursorChar
 !return:
     rts
 
@@ -252,9 +252,9 @@ initEditorVariables:
 saveLinesCounter: .byte $00
 
 commandCtrlO:
-    lda curPosX
+    lda terminal.curPosX
     pha
-    lda curPosY
+    lda terminal.curPosY
     pha
     lda editorCacheCursor
     pha 
@@ -262,7 +262,7 @@ commandCtrlO:
     pha
 
     jsr askFilename
-    lda inpBufLen
+    lda terminal.inpBufLen
     cmp #0
     beq !noFilename+
 
@@ -325,9 +325,9 @@ commandCtrlO:
     pla
     sta editorCacheCursor
     pla
-    sta curPosY
+    sta terminal.curPosY
     pla
-    sta curPosX
+    sta terminal.curPosX
     rts
 
 // ========================================
@@ -339,7 +339,7 @@ commandCtrlR:
     sta readLinesCounter
 
     jsr askFilename
-    lda inpBufLen
+    lda terminal.inpBufLen
     cmp #0
     beq !noFilename+
 
@@ -398,7 +398,7 @@ commandCtrlR:
     jsr resetEditorCacheCursor
 
     lda startEditor
-    sta cursorChar
+    sta terminal.cursorChar
 
     rts
 
@@ -409,9 +409,9 @@ editorPrintError:
     jsr clearStatLine
 
     ldx #errorOffset
-    stx curPosX
+    stx terminal.curPosX
     ldy #statusLineY
-    sty curPosY
+    sty terminal.curPosY
 
     cmp #errCodeFileExists
     beq !errFileExists+
@@ -421,21 +421,21 @@ editorPrintError:
     jmp !errorUnknown+
 
 !errFileExists:
-    ldx #<errFileExists
-    ldy #>errFileExists
+    ldx #<terminal.errFileExists
+    ldy #>terminal.errFileExists
     jmp !printError+
 
 !errIsDir:
-    ldx #<errIsDir
-    ldy #>errIsDir
+    ldx #<terminal.errIsDir
+    ldy #>terminal.errIsDir
     jmp !printError+
 
 !errorUnknown:
-    ldx #<errorUnknown
-    ldy #>errorUnknown
+    ldx #<terminal.errorUnknown
+    ldy #>terminal.errorUnknown
 
 !printError:
-    jsr printString
+    jsr terminal.printString
 
 !return:
     jsr invertColors
@@ -445,11 +445,11 @@ editorPrintError:
 
 copyFilenameToCommandBuffer:
     lda #filenameOffset
-    sta curPosX
-    jsr calcCurPos
-    lda cursor
+    sta terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                     
     lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
@@ -459,7 +459,7 @@ copyFilenameToCommandBuffer:
 
     ldy #0                                  // copy filename to buffer
 !loop:
-    cpy inpBufLen
+    cpy terminal.inpBufLen
     beq !loopEnd+
     lda (sourceAddr),Y
     sta (destinationAddr),y
@@ -486,13 +486,13 @@ updateFilename:
 !loopEnd:
 
     lda #filenameOffset
-    sta curPosX
+    sta terminal.curPosX
     lda #statusLineY
-    sta curPosY
-    jsr calcCurPos
-    lda cursor                              // copy statusLine+filenameOffset to source address
+    sta terminal.curPosY
+    jsr terminal.calcCurPos
+    lda terminal.cursor                     // copy statusLine+filenameOffset to source address
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                                             
     lda #<startHeader+filenameOffset        // copy header+filenameOffset to destination address
@@ -502,7 +502,7 @@ updateFilename:
 
     ldy #0                                  // copy filename to header
 !loop:
-    cpy inpBufLen
+    cpy terminal.inpBufLen
     beq !loopEnd+
     lda (sourceAddr),Y
     sta (destinationAddr),y
@@ -596,17 +596,17 @@ askFilename:
     jsr clearStatLine
 
     lda #questionOffset                     // print question
-    sta curPosX
+    sta terminal.curPosX
     lda #statusLineY
-    sta curPosY
+    sta terminal.curPosY
     
     ldx #<filename
     ldy #>filename
-    jsr printString
+    jsr terminal.printString
 
     lda #filenameOffset                     // get answer
-    sta curPosX
-    jsr getString
+    sta terminal.curPosX
+    jsr terminal.getString
 !return:
     jsr invertColors
     rts
@@ -621,13 +621,13 @@ printXxxLinesWritten:
     jsr clearStatLine
 
     lda #infoOffset                         // print sentence
-    sta curPosX
+    sta terminal.curPosX
     lda #statusLineY
-    sta curPosY
+    sta terminal.curPosY
     
     ldx #<xxxLinesWritten
     ldy #>xxxLinesWritten
-    jsr printString
+    jsr terminal.printString
 
     lda saveLinesCounter
     jsr print8
@@ -655,13 +655,13 @@ printXxxLinesRead:
     jsr clearStatLine
 
     lda #infoOffset                         // print sentence
-    sta curPosX
+    sta terminal.curPosX
     lda #statusLineY
-    sta curPosY
+    sta terminal.curPosY
     
     ldx #<xxxLinesRead
     ldy #>xxxLinesRead
-    jsr printString
+    jsr terminal.printString
 
     lda readLinesCounter
     jsr print8
@@ -700,30 +700,44 @@ clearStatLine:
 
 // ========================================
 
+isEditMarkerVisible: .byte FALSE
+
 showEditMarker:
+    lda isEditMarkerVisible
+    cmp #TRUE
+    beq !return+
+
     jsr invertColors
     lda #charAsterisk
     ldx #editMarkerOffset
     sta startHeader,x
     jsr invertColors
+    lda #TRUE
+    sta isEditMarkerVisible
 !return:
     rts
 
 // ========================================
 
 clearEditMarker:
+    lda isEditMarkerVisible
+    cmp #FALSE
+    beq !return+
+
     jsr invertColors
     lda #charSpace
     ldx #editMarkerOffset
     sta startHeader,x
     jsr invertColors
+    lda #FALSE
+    sta isEditMarkerVisible
 !return:
     rts
 
 // ========================================
 
 editorPrintableChar:
-    ldx curPosX                             // don't leave screen
+    ldx terminal.curPosX                    // don't leave screen
     cpx #screenWidth - 2
     beq !return+
 
@@ -748,7 +762,7 @@ editorPrintableChar:
     jsr shiftRightEditorCache
 
 !incrCursors:
-    jsr incrCursor
+    jsr terminal.incrCursor
     lda #<editorCacheCursor
     jsr incrZeropageAddr
 
@@ -758,12 +772,12 @@ editorPrintableChar:
 // ========================================
 
 editorBackspace:
-    ldx curPosX                             // don't leave editor area
+    ldx terminal.curPosX                    // don't leave editor area
     cpx #editorStartX
     beq !return+
 
 !decreaseCursors:
-    jsr decrCursor
+    jsr terminal.decrCursor
     lda #<editorCacheCursor
     jsr decrZeropageAddr
 
@@ -779,29 +793,29 @@ editorBackspace:
 // TODO: handle scrolling at the end of editor
 
 editorEnter:
-    ldx curPosX                             // don't leave screen
+    ldx terminal.curPosX                    // don't leave screen
     cpx #screenWidth - 1
     beq !return+
 
-    ldx curPosY                             // don't leave editor
+    ldx terminal.curPosY                    // don't leave editor
     cpx #screenHeight - footer1Height - footer2Height - vGapHeight - 1
     beq !return+
 
-    jsr calcCurPos                          // allow only at end of line
+    jsr terminal.calcCurPos                 // allow only at end of line
     ldy #0
-    lda (cursor),y
+    lda (terminal.cursor),y
     cmp #$00
     bne !return+
 
     lda #charPilcrowSign                    // print line feed symbol in screen ram
-    sta (cursor),y
+    sta (terminal.cursor),y
     lda #ctrlLineFeed                       // store line feed in editor cache
     sta (editorCacheCursor),y
 
 !newLine:
     lda #editorStartX                       // new line
-    sta curPosX
-    inc curPosY
+    sta terminal.curPosX
+    inc terminal.curPosY
     lda #<editorCacheCursor                 // increment editor cache cursor
     jsr incrZeropageAddr
 
@@ -816,11 +830,11 @@ editorCursorLeft:
 // Preserves: Y
 
 !cursorLeft:
-    ldx curPosX
+    ldx terminal.curPosX
     cpx #editorStartX                       // don't go beyond editor start
     beq !return+
 
-    dec curPosX
+    dec terminal.curPosX
     lda #<editorCacheCursor
     jsr decrZeropageAddr
 
@@ -837,15 +851,15 @@ editorCursorRight:
 // Preserves: X
 
 !cursorRight:
-    jsr calcCurPos
+    jsr terminal.calcCurPos
     ldy #0
-    lda (cursor),y                          // get char under current cursor
+    lda (terminal.cursor),y                 // get char under current cursor
     cmp #$00
     beq !return+                            // if end of editor cache reached
     cmp #charPilcrowSign
     beq !return+                            // if end of line reached
 
-    inc curPosX
+    inc terminal.curPosX
     lda #<editorCacheCursor
     jsr incrZeropageAddr
 
@@ -862,12 +876,12 @@ editorCursorUp:
 // Preserves: Y
 
 !checkTopLimit:
-    lda curPosY
+    lda terminal.curPosY
     cmp #headerHeight + vGapHeight
     beq !return+
 
 !cursorUp:
-    dec curPosY
+    dec terminal.curPosY
     jsr editorCacheEndOfPreviousLine
     jsr verifyCursor                        // Y contains offset
     lda #<editorCacheCursor
@@ -905,27 +919,27 @@ editorCursorDown:
 // Preserves: Y
 
 !checkBottomLimit:
-    lda curPosY
+    lda terminal.curPosY
     cmp #headerHeight + vGapHeight + editorHeight - 1
     beq !return+
 
 !checkLastLine:
-    jsr calcCurPos
+    jsr terminal.calcCurPos
     ldy #0
 !loop:
-    lda (cursor),y
+    lda (terminal.cursor),y
     cmp #$00
     beq !return+
     cmp #charPilcrowSign
     beq !loopEnd+
     beq !return+
-    lda #<cursor
+    lda #<terminal.cursor
     jsr incrZeropageAddr
     jmp !loop-
 !loopEnd:
 
 !cursorDown:
-    inc curPosY
+    inc terminal.curPosY
     jsr editorCacheEndOfNextLine
     jsr verifyCursor                        // Y contains offset
     lda #<editorCacheCursor
@@ -977,10 +991,10 @@ editorCacheEndOfNextLine:
 // returns horizontal Offset to Line End in Y
 
 verifyCursor:
-    jsr calcCurPos
+    jsr terminal.calcCurPos
 
     ldy #0
-    lda (cursor),y
+    lda (terminal.cursor),y
     cmp #$00                                // in empty space right of line end
     beq !moveLeftToLineEnd+
     cmp #charPilcrowSign                    // directly on line end
@@ -990,24 +1004,24 @@ verifyCursor:
 !moveLeftToLineEnd:
 
 !loop:
-    dec curPosX
-    jsr calcCurPos
-    lda curPosX
+    dec terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.curPosX
     cmp #lineNumbersWidth + hGapWidth       // is next line an empty last line?
     beq !return+
     ldy #0
-    lda (cursor),y
+    lda (terminal.cursor),y
     cmp #$00                                // in empty space right of line end
     beq !loop-
     cmp #charPilcrowSign                    // directly on line end
     beq !return+
-    inc curPosX                             // last line element
+    inc terminal.curPosX                    // last line element
     jmp !return+
 
 !calcLineEndOffset:
     ldy #0
 !loop:
-    lda (cursor),y
+    lda (terminal.cursor),y
     cmp #$00
     beq !return+
     cmp #charPilcrowSign
@@ -1061,9 +1075,9 @@ resetEditorCacheCursor:
 
 resetEditorCursor:
     lda #editorStartX
-    sta curPosX
+    sta terminal.curPosX
     lda #editorStartY
-    sta curPosY
+    sta terminal.curPosY
 !return:
     rts
 
@@ -1133,9 +1147,9 @@ printLineNumbers:
     sta currentNumberToPrint
 
     ldx #lineNumbersStartX
-    stx curPosX
+    stx terminal.curPosX
     ldy #lineNumbersStartY
-    sty curPosY
+    sty terminal.curPosY
 
     jsr invertColors
 
@@ -1147,16 +1161,16 @@ printLineNumbers:
 
 !copyNumber:
     lda num8Digits+0
-    jsr printChar
-    inc curPosX
+    jsr terminal.printChar
+    inc terminal.curPosX
     lda num8Digits+1
-    jsr printChar
-    inc curPosX
+    jsr terminal.printChar
+    inc terminal.curPosX
     lda num8Digits+2
-    jsr printChar
-    inc curPosY
+    jsr terminal.printChar
+    inc terminal.curPosY
     lda #lineNumbersStartX
-    sta curPosX
+    sta terminal.curPosX
 
     inc currentNumberToPrint
 
@@ -1173,11 +1187,29 @@ editorReturn:
 
 // ========================================
 
-invertColors:
-    ldx foregroundColor                     // invert foreground and background color
-    ldy backgroundColor
-    sty foregroundColor
-    stx backgroundColor
+isColorInverted: .byte FALSE
+
+invertColors:                               // invert first two colors by switching color palette
+    ldx isColorInverted
+    cpx #TRUE
+    beq !isTrue+
+!isFalse:
+    ldx #<terminal.colorTable2
+    stx colorTableAddr
+    ldx #>terminal.colorTable2
+    stx colorTableAddr+1
+    ldx #TRUE
+    stx isColorInverted
+    jmp !return+
+!isTrue:
+    ldx #<terminal.colorTable1
+    stx colorTableAddr
+    ldx #>terminal.colorTable1
+    stx colorTableAddr+1
+    ldx #FALSE
+    stx isColorInverted
+
+!return:
     rts
 
 // ========================================
@@ -1190,35 +1222,35 @@ editorScrollUp:
 // ========================================
 
 shiftLeftScreenMem:
-    lda curPosX
+    lda terminal.curPosX
     pha
-    lda curPosY
+    lda terminal.curPosY
     pha
 
 !loop:
-    jsr calcCurPos
+    jsr terminal.calcCurPos
 
     ldy #1
-    lda (cursor),y
+    lda (terminal.cursor),y
     cmp #$00                                // end of editor cache reached?
     beq !clearLastChar+
 
     ldy #0
-    sta (cursor),y                       // shift left in screen mem
+    sta (terminal.cursor),y                 // shift left in screen mem
 
-    jsr incrCursor
+    jsr terminal.incrCursor
     jmp !loop-
 
 !clearLastChar:
     ldy #0
     lda #$00
-    sta (cursor),y
+    sta (terminal.cursor),y
 
 !return:
     pla
-    sta curPosY
+    sta terminal.curPosY
     pla
-    sta curPosX
+    sta terminal.curPosX
     rts
 
 // ========================================
@@ -1264,50 +1296,50 @@ nextChar: .byte $00
 shiftRightScreenMem:
     sta newChar
 
-    lda curPosX
+    lda terminal.curPosX
     pha
-    lda curPosY
+    lda terminal.curPosY
     pha
 
 !loop:
-    jsr calcCurPos
+    jsr terminal.calcCurPos
     lda newChar
     cmp #$00                                // end of editor cache reached?
     beq !storeLastChar+
 
 !fourStepsShift:
     ldy #1
-    lda (cursor),y
+    lda (terminal.cursor),y
     sta nextChar                            // store next char in nextChar
 
     ldy #0
-    lda (cursor),y                          // get char under cursor
+    lda (terminal.cursor),y                 // get char under cursor
 
     ldy #1
-    sta (cursor),y                          // shift right in screen mem
+    sta (terminal.cursor),y                 // shift right in screen mem
 
     lda newChar
     ldy #0
-    sta (cursor),y                          // store newChar in screen ram
+    sta (terminal.cursor),y                 // store newChar in screen ram
 
     lda nextChar
     sta newChar                             // copy nextChar to newChar
 
 !incrementCursors:                          // two times
-    jsr incrCursor
-    jsr incrCursor
+    jsr terminal.incrCursor
+    jsr terminal.incrCursor
     jmp !loop-
 
 !storeLastChar:
     ldy #0
     lda newChar
-    sta (cursor),y
+    sta (terminal.cursor),y
 
 !return:
     pla
-    sta curPosY
+    sta terminal.curPosY
     pla
-    sta curPosX
+    sta terminal.curPosX
     rts
 
 // ========================================
@@ -1406,15 +1438,15 @@ copyEditorCacheToScreenMem:
     inc insertLineFeedCounter
 
     jsr resetEditorCursor
-    lda curPosY
+    lda terminal.curPosY
     clc
     adc insertLineFeedCounter
-    sta curPosY
-    jsr calcCurPos
+    sta terminal.curPosY
+    jsr terminal.calcCurPos
 
-    lda cursor                                  // set destination address to start of next line in screen mem
+    lda terminal.cursor                     // set destination address to start of next line in screen mem
     sta destinationAddr
-    lda cursor+1
+    lda terminal.cursor+1
     sta destinationAddr+1
 
     jmp !continue-

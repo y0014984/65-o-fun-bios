@@ -1,3 +1,4 @@
 {
-    "kickassembler.startup": "./bios.asm"
+    "kickassembler.startup": "./bios.asm",
+    "kickassembler.assembler.option.sourceSymbols": true
 }

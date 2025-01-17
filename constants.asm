@@ -52,3 +52,30 @@
 .const errCodeNotProgram    = $8D
 
 // ========================================
+
+.const colModeInvisible     = 0
+.const colMode2             = 1             // 1 bit color code (2 colors)
+.const colMode4             = 2             // 2 bits color code (4 colors)
+.const colMode8             = 3             // 3 bits color code (8 colors)
+.const colMode16            = 4             // 4 bits color code (16 colors)
+.const colMode32            = 5             // 5 bits color code (32 colors)
+.const colMode64            = 6             // 6 bits color code (64 colors)
+.const colMode128           = 7             // 7 bits color code (128 colors)
+
+// ========================================
+
+.const tileMode1             = 0            // 1x1 tile
+.const tileMode2             = 1            // 2x2 tile
+.const tileMode4             = 2            // 4x4 tile
+.const tileMode8             = 3            // 8x8 tile
+.const tileMode16            = 4            // 16x16 tile
+.const tileMode32            = 5            // 32x32 tile
+.const tileMode64            = 6            // 64x64 tile
+.const tileMode128           = 7            // 128x128 tile
+
+// ========================================
+
+.const tileOrientLeftRight   = 0
+.const tileOrientTopBottom   = 1
+
+// ========================================
