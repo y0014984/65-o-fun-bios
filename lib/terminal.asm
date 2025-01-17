@@ -10,6 +10,10 @@
 
 // ========================================
 
+.namespace terminal {
+
+// ========================================
+
 .label pointer              = $FC           // WORD $FC + $FD = used by PRINT_STRING
 .label cursor               = $FE           // WORD $FE + $FF = current pos in screen mem
 
@@ -22,7 +26,7 @@
 
 // ========================================
 
-terminalOutputBuffer: .fill screenWidth - 1, $00
+outputBuffer: .fill screenWidth - 1, $00
 
 // ========================================
 
@@ -80,7 +84,7 @@ initGraphics:
     
 // ========================================
 
-initTerminal:
+init:
     jsr initGraphics
 
     lda #charSpace
@@ -120,8 +124,8 @@ initTerminal:
 
 // ========================================
 
-terminalStart:
-    jsr initTerminal
+start:
+    jsr init
 
 !loop:
     lda #charGreaterThan                   // prompt
@@ -261,7 +265,7 @@ resetInpBuf:
     sta inpBufCur
     ldx #0
 !loop:
-    sta terminalOutputBuffer,x
+    sta outputBuffer,x
     inx
     cpx #screenWidth - 1
     bne !loop-
@@ -549,7 +553,7 @@ processInpBuf:
 !commandNotFound:
     ldx #<commandNotFound
     ldy #>commandNotFound
-    jsr printTerminalLine
+    jsr printLine
 
 !return:
     rts
@@ -658,7 +662,7 @@ newTerminalLine:
 
 // X and Y contain low byte and high byte of the zero terminated string
 
-printTerminalLine:
+printLine:
     jsr newTerminalLine
     jsr printString
 !return:
@@ -742,7 +746,7 @@ printError:
     ldy #>errorUnknown
 
 !printError:
-    jsr printTerminalLine
+    jsr printLine
 
 !return:
     rts
@@ -897,5 +901,9 @@ fillScreen:
     bne !loop-
 !return:
     rts
+
+// ======================================== */
+
+} // end of Namespace
 
 // ======================================== */

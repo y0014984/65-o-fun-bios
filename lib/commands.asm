@@ -12,7 +12,7 @@
 paramLength: .byte $00
 
 echoCommand:
-    lda inpBufLen                           // INP_BUF_LEN - 6 = length of parameter to print
+    lda terminal.inpBufLen                  // INP_BUF_LEN - 6 = length of parameter to print
     cmp #6
     bcc !return+                            // A<6 = no parameter
     sec
@@ -20,16 +20,16 @@ echoCommand:
     sta paramLength
 
     ldx #6                                  // copy start of parameter to source address
-    stx curPosX
-    jsr calcCurPos
-    lda cursor
+    stx terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                     
-    lda #<terminalOutputBuffer              // copy start of terminal output buffer to destination address
+    lda #<terminal.outputBuffer             // copy start of terminal output buffer to destination address
     sta destinationAddr
-    lda #>terminalOutputBuffer
+    lda #>terminal.outputBuffer
     sta destinationAddr + 1
 
     ldy #0                                  // copy parameter to next line until a $00 is reached
@@ -42,9 +42,9 @@ echoCommand:
     jmp !loop-
 
 !print:
-    ldx #<terminalOutputBuffer
-    ldy #>terminalOutputBuffer
-    jsr printTerminalLine
+    ldx #<terminal.outputBuffer
+    ldy #>terminal.outputBuffer
+    jsr terminal.printLine
 
 !return:
     rts
@@ -53,11 +53,11 @@ echoCommand:
 
 clearCommand:
     lda #charSpace
-    jsr fillScreen
+    jsr terminal.fillScreen
     lda #0
-    sta curPosX
+    sta terminal.curPosX
     lda #255
-    sta curPosY
+    sta terminal.curPosY
 !return:
     rts
 
@@ -68,7 +68,7 @@ unameString: .text @"65-o-fun v0.1 BIOS\$00"
 unameCommand:
     ldx #<unameString
     ldy #>unameString
-    jsr printTerminalLine
+    jsr terminal.printLine
 !return:
     rts
 
@@ -199,7 +199,7 @@ dateCommand:
 !print:
     ldx #<dateString
     ldy #>dateString
-    jsr printTerminalLine
+    jsr terminal.printLine
 !return:
     rts
 
@@ -216,7 +216,7 @@ helpCommand:
 !loop:
     cpy #screenWidth - 1
     beq !print+
-    lda commandList,x
+    lda terminal.commandList,x
     cmp #$00
     beq !addComma+
     sta helpString,y
@@ -225,7 +225,7 @@ helpCommand:
     jmp !loop-
 
 !addComma:
-    lda commandList+1,x
+    lda terminal.commandList+1,x
     cmp #$00
     beq !printAndReturn+
     lda #charComma
@@ -256,7 +256,7 @@ printHelpString:
     pha
     ldx #<helpString
     ldy #>helpString
-    jsr printTerminalLine
+    jsr terminal.printLine
 !return:
     pla
     tay
@@ -292,7 +292,7 @@ lsString: .fill screenWidth-1, $20
 lsCommand:
     ldx #<lsHeadlineString
     ldy #>lsHeadlineString
-    jsr printTerminalLine
+    jsr terminal.printLine
 
     jsr getFilesystemObjectCount
     sta fsObjectCount
@@ -323,7 +323,7 @@ lsCommand:
 !printLine:
     ldx #<lsString
     ldy #>lsString
-    jsr printTerminalLine
+    jsr terminal.printLine
     jsr clearLsString
     inc fsObjectIndex
     jmp !loop-
@@ -457,7 +457,7 @@ clearLsString:
 // ========================================
 
 cdCommand:
-    lda inpBufLen                           // INP_BUF_LEN - 4 = length of parameter to print
+    lda terminal.inpBufLen                  // INP_BUF_LEN - 4 = length of parameter to print
     cmp #4
     bcc !return+                            // A<4 = no parameter
     sec
@@ -465,11 +465,11 @@ cdCommand:
     sta paramLength
 
     ldx #4                                  // copy start of parameter to source address
-    stx curPosX
-    jsr calcCurPos
-    lda cursor
+    stx terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                     
     lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
@@ -493,7 +493,7 @@ cdCommand:
 
 !printError:
     lda storageComLastErr
-    jsr printError
+    jsr terminal.printError
 
 !return:
     rts
@@ -519,7 +519,7 @@ pwdCommand:
 !printLine:
     ldx #<pwdString
     ldy #>pwdString
-    jsr printTerminalLine
+    jsr terminal.printLine
     jsr clearPwdString
 
 !return:
@@ -542,7 +542,7 @@ clearPwdString:
 // ========================================
 
 mkdirCommand:
-    lda inpBufLen                           // INP_BUF_LEN - 7 = length of parameter to print
+    lda terminal.inpBufLen                  // INP_BUF_LEN - 7 = length of parameter to print
     cmp #7
     bcc !return+                            // A<7 = no parameter
     sec
@@ -550,11 +550,11 @@ mkdirCommand:
     sta paramLength
 
     ldx #7                                  // copy start of parameter to source address
-    stx curPosX
-    jsr calcCurPos
-    lda cursor
+    stx terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                     
     lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
@@ -578,7 +578,7 @@ mkdirCommand:
 
 !printError:
     lda storageComLastErr
-    jsr printError
+    jsr terminal.printError
 
 !return:
     rts
@@ -586,7 +586,7 @@ mkdirCommand:
 // ========================================
 
 rmdirCommand:
-    lda inpBufLen                           // INP_BUF_LEN - 7 = length of parameter to print
+    lda terminal.inpBufLen                  // INP_BUF_LEN - 7 = length of parameter to print
     cmp #7
     bcc !return+                            // A<7 = no parameter
     sec
@@ -594,11 +594,11 @@ rmdirCommand:
     sta paramLength
 
     ldx #7                                  // copy start of parameter to source address
-    stx curPosX
-    jsr calcCurPos
-    lda cursor
+    stx terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                     
     lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
@@ -622,7 +622,7 @@ rmdirCommand:
 
 !printError:
     lda storageComLastErr
-    jsr printError
+    jsr terminal.printError
 
 !return:
     rts
@@ -630,7 +630,7 @@ rmdirCommand:
 // ========================================
 
 touchCommand:
-    lda inpBufLen                           // INP_BUF_LEN - 7 = length of parameter to print
+    lda terminal.inpBufLen                  // INP_BUF_LEN - 7 = length of parameter to print
     cmp #7
     bcc !return+                            // A<7 = no parameter
     sec
@@ -638,11 +638,11 @@ touchCommand:
     sta paramLength
 
     ldx #7                                  // copy start of parameter to source address
-    stx curPosX
-    jsr calcCurPos
-    lda cursor
+    stx terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                     
     lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
@@ -666,7 +666,7 @@ touchCommand:
 
 !printError:
     lda storageComLastErr
-    jsr printError
+    jsr terminal.printError
 
 !return:
     rts
@@ -674,7 +674,7 @@ touchCommand:
 // ========================================
 
 rmCommand:
-    lda inpBufLen                           // INP_BUF_LEN - 4 = length of parameter to print
+    lda terminal.inpBufLen                  // INP_BUF_LEN - 4 = length of parameter to print
     cmp #4
     bcc !return+                            // A<4 = no parameter
     sec
@@ -682,11 +682,11 @@ rmCommand:
     sta paramLength
 
     ldx #4                                  // copy start of parameter to source address
-    stx curPosX
-    jsr calcCurPos
-    lda cursor
+    stx terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor + 1
+    lda terminal.cursor + 1
     sta sourceAddr + 1
                     
     lda #<commandBuffer+3                   // copy command buffer + 3 to destination address
@@ -710,7 +710,7 @@ rmCommand:
 
 !printError:
     lda storageComLastErr
-    jsr printError
+    jsr terminal.printError
 
 !return:
     rts
@@ -719,7 +719,7 @@ rmCommand:
 
 bonoCommand:
     jsr editorStart
-    jsr initTerminal
+    jsr terminal.init
 
 !return:
     rts
@@ -743,16 +743,16 @@ runCommand:
     jsr isProgram
     cmp #TRUE
     beq !getLoadAddress+
-    jsr printError
+    jsr terminal.printError
     jmp !return+
 
 !noFilesystemObject:
-    jsr printError
+    jsr terminal.printError
     jmp !return+
 
 !printError:
     lda storageComLastErr
-    jsr printError
+    jsr terminal.printError
 
 !getLoadAddress:
     jsr copyRunCommandParameter
@@ -789,7 +789,7 @@ runCommand:
     sta usedLoadAddress+2
 usedLoadAddress:
     jsr $0000
-    jsr initTerminal
+    jsr terminal.init
 
 !return:
     rts
@@ -797,7 +797,7 @@ usedLoadAddress:
 // ========================================
 
 copyRunCommandParameter:
-    lda inpBufLen                           // INP_BUF_LEN - 5 = length of parameter to print
+    lda terminal.inpBufLen                  // INP_BUF_LEN - 5 = length of parameter to print
     cmp #5
     bcc !return+                            // A<5 = no parameter
     sec
@@ -805,11 +805,11 @@ copyRunCommandParameter:
     sta paramLength
 
     ldx #5                                  // copy start of parameter to source address
-    stx curPosX
-    jsr calcCurPos
-    lda cursor
+    stx terminal.curPosX
+    jsr terminal.calcCurPos
+    lda terminal.cursor
     sta sourceAddr
-    lda cursor+1
+    lda terminal.cursor+1
     sta sourceAddr+1
                     
     lda #<commandBuffer+3                   // copy command buffer + 3 to destination address

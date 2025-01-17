@@ -22,11 +22,6 @@
 
 // ========================================
 
-.label foregroundColor      = $020A
-.label backgroundColor      = $020B
-
-// ========================================
-
 .label dateTimeYear         = $020C         // WORD $020C + $020D
 .label dateTimeWeekdayMonth = $020E
 .label dateTimeDay          = $020F

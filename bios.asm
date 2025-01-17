@@ -62,7 +62,6 @@
 
     #if !DEBUG
 
-    //jsr testScreen
     //jsr testFontWrite
     //jsr testStorage
     jsr testColorMode
@@ -71,7 +70,7 @@
 
 // ========================================
 
-    jmp terminalStart
+    jmp terminal.start
 
 // ========================================
 
